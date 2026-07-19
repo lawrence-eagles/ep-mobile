@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -15,7 +16,7 @@ import {
 } from "react-native";
 import { z } from "zod";
 
-// ✅ Zod schema (FIXED)
+// ✅ Zod schema
 const loginSchema = z.object({
   email: z.email("Please enter a valid email"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -30,7 +31,6 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     const result = loginSchema.safeParse({ email, password });
 
-    // ✅ FIXED: use "issues" instead of "errors"
     if (!result.success) {
       const firstError = result.error.issues[0]?.message;
       Alert.alert("Validation Error", firstError || "Invalid input");
@@ -51,7 +51,10 @@ export default function LoginScreen() {
       }
 
       if (!data || !data.user.emailVerified) {
-        router.replace("/verify-email");
+        router.push({
+          pathname: "/verify-email",
+          params: { email },
+        });
         return;
       }
 
@@ -70,106 +73,113 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {/* HEADER */}
-      <View style={styles.header}>
-        {/* Logo */}
-        <View style={styles.logoBox}>
-          <Text style={styles.logoText}>EP</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* HEADER */}
+        <View style={styles.header}>
+          <View style={styles.logoBox}>
+            <Text style={styles.logoText}>EP</Text>
+          </View>
+
+          <Text style={styles.title}>Eaglespress</Text>
+          <Text style={styles.welcome}>Welcome back 👋</Text>
+          <Text style={styles.subtitle}>
+            Login to continue to your account.
+          </Text>
         </View>
 
-        <Text style={styles.title}>Eaglespress</Text>
-        <Text style={styles.welcome}>Welcome back 👋</Text>
-        <Text style={styles.subtitle}>Login to continue to your account.</Text>
-      </View>
-
-      {/* FORM */}
-      <View style={styles.form}>
-        {/* Email */}
-        <Text style={styles.label}>Email address</Text>
-        <View style={styles.inputContainer}>
-          <Image
-            source={require("@/assets/images/envelop-icon.png")}
-            style={styles.icon}
-            contentFit="contain" // added
-          />
-          <TextInput
-            placeholder="Enter your email"
-            placeholderTextColor="#9ca3af"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            style={styles.input}
-          />
-        </View>
-
-        {/* Password */}
-        <Text style={styles.label}>Password</Text>
-        <View style={styles.inputContainer}>
-          <Image
-            source={require("@/assets/images/padlock-icon.png")}
-            style={styles.icon}
-            contentFit="contain" // added
-          />
-          <TextInput
-            placeholder="Enter your password"
-            placeholderTextColor="#9ca3af"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={secureText}
-            style={styles.input}
-          />
-
-          <Pressable onPress={() => setSecureText((prev) => !prev)}>
+        {/* FORM */}
+        <View style={styles.form}>
+          {/* Email */}
+          <Text style={styles.label}>Email address</Text>
+          <View style={styles.inputContainer}>
             <Image
-              source={
-                secureText
-                  ? require("@/assets/images/closed-eye-icon.png")
-                  : require("@/assets/images/open-eye-icon.png")
-              }
-              style={styles.eyeIcon}
-              contentFit="contain" // added
+              source={require("@/assets/images/envelop-icon.png")}
+              style={styles.icon}
+              contentFit="contain"
             />
+            <TextInput
+              placeholder="Enter your email"
+              placeholderTextColor="#9ca3af"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              style={styles.input}
+            />
+          </View>
+
+          {/* Password */}
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.inputContainer}>
+            <Image
+              source={require("@/assets/images/padlock-icon.png")}
+              style={styles.icon}
+              contentFit="contain"
+            />
+            <TextInput
+              placeholder="Enter your password"
+              placeholderTextColor="#9ca3af"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={secureText}
+              style={styles.input}
+            />
+
+            <Pressable onPress={() => setSecureText((prev) => !prev)}>
+              <Image
+                source={
+                  secureText
+                    ? require("@/assets/images/closed-eye-icon.png")
+                    : require("@/assets/images/open-eye-icon.png")
+                }
+                style={styles.eyeIcon}
+                contentFit="contain"
+              />
+            </Pressable>
+          </View>
+
+          {/* Forgot password */}
+          <Pressable
+            onPress={() => router.push("/forgot-password")}
+            style={styles.forgotContainer}
+          >
+            <Text style={styles.forgot}>Forgot password?</Text>
+          </Pressable>
+
+          {/* Login Button */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.loginButton,
+              pressed && { opacity: 0.8 },
+            ]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.loginText}>Login</Text>
+            )}
           </Pressable>
         </View>
 
-        {/* Forgot password */}
-        <Pressable
-          onPress={() => router.push("/forgot-password")}
-          style={styles.forgotContainer}
-        >
-          <Text style={styles.forgot}>Forgot password?</Text>
-        </Pressable>
-
-        {/* Login Button */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.loginButton,
-            pressed && { opacity: 0.8 },
-          ]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.loginText}>Login</Text>
-          )}
-        </Pressable>
-      </View>
-
-      {/* FOOTER */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Don’t have an account?{" "}
-          <Text
-            style={styles.register}
-            onPress={() => router.push("/register")}
-          >
-            Register
+        {/* FOOTER */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Don&apos;t have an account?{" "}
+            <Text
+              style={styles.register}
+              onPress={() => router.push("/register")}
+            >
+              Register
+            </Text>
           </Text>
-        </Text>
-      </View>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -180,8 +190,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f9fafb",
+  },
+
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 70,
+    paddingBottom: 30,
   },
 
   header: {
@@ -292,7 +307,6 @@ const styles = StyleSheet.create({
 
   footer: {
     marginTop: "auto",
-    marginBottom: 20,
     alignItems: "center",
   },
 

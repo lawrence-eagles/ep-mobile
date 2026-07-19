@@ -44,33 +44,22 @@ export default function ResetPassword() {
     };
   }, [password]);
 
-  // ✅ Handle redirect errors
+  // ✅ Handle missing token and redirect errors
   useEffect(() => {
-    if (!errorParam) return;
-
-    switch (errorParam) {
-      case "invalid_token":
+    if (errorParam) {
+      if (errorParam === "invalid_token") {
         Alert.alert("Invalid link", "This reset link is invalid.");
-        router.replace("/forgot-password");
-        break;
-
-      case "expired_token":
+      } else if (errorParam === "expired_token") {
         Alert.alert("Expired link", "This reset link has expired.");
-        router.replace("/forgot-password");
-        break;
-
-      default:
+      } else {
         Alert.alert("Error", "Something went wrong.");
-    }
-  }, [errorParam]);
-
-  // ✅ Missing token
-  useEffect(() => {
-    if (!token) {
-      Alert.alert("Invalid or missing token");
+      }
+      router.replace("/forgot-password");
+    } else if (!token) {
+      Alert.alert("Error", "Invalid or missing token.");
       router.replace("/forgot-password");
     }
-  }, [token]);
+  }, [errorParam, token]);
 
   const handleResetPassword = async () => {
     const parsed = passwordSchema.safeParse(password);

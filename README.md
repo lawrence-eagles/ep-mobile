@@ -92,6 +92,7 @@ in the image i uploaded upscale the hero-image illustration, make it a transpare
 6. check the forgot password back button to make sure the style is ok
 7. check the reset password wave and password eyes
 8. check the verify email back button to make sure the style is ok.
+9. check the apostrophe sign in login page.
 
 Brand blue: #2563eb
 Google svg --- https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg

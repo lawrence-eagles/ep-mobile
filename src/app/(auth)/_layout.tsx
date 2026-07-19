@@ -3,7 +3,7 @@ import { Redirect, Stack } from "expo-router";
 import { ActivityIndicator, Text, View } from "react-native";
 
 export default function RootLayout() {
-  const { isAuthenticated, isLoading, isError, error } = useAuth();
+  const { user, isAuthenticated, isLoading, isError, error } = useAuth();
 
   // ⏳ Loading state
   if (isLoading) {
@@ -38,7 +38,7 @@ export default function RootLayout() {
     );
   }
 
-  if (isAuthenticated) {
+  if (isAuthenticated && user?.emailVerified) {
     return <Redirect href={"/(tabs)"} />;
   }
 

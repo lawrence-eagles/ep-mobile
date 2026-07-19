@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -21,11 +22,11 @@ const passwordRules = {
   minLength: (val: string) => val.length >= 8,
   upper: (val: string) => /[A-Z]/.test(val),
   lower: (val: string) => /[a-z]/.test(val),
-  number: (val: string) => /[0-9!@#$%^&*]/.test(val),
+  number: (val: string) => /[0-9]|[^A-Za-z0-9\s]/.test(val),
 };
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Full name is required"),
+  name: z.string().trim().min(2, "Full name is required"),
   email: z.email("Please enter a valid email"),
   password: z
     .string()
@@ -69,9 +70,9 @@ export default function Register() {
       setLoading(true);
 
       const { data, error } = await authClient.signUp.email({
-        email,
-        password,
-        name,
+        email: result.data.email,
+        password: result.data.password,
+        name: result.data.name,
       });
 
       if (error) {
@@ -112,120 +113,134 @@ export default function Register() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.logoBox}>
-          <Text style={styles.logoText}>EP</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false} // ✅ hides scrollbar
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* HEADER */}
+        <View style={styles.header}>
+          <View style={styles.logoBox}>
+            <Text style={styles.logoText}>EP</Text>
+          </View>
+
+          <Text style={styles.title}>Eaglespress</Text>
+          <Text style={styles.subtitleTitle}>Create your account</Text>
+          <Text style={styles.subtitle}>
+            Join Eaglespress and stay informed.
+          </Text>
         </View>
 
-        <Text style={styles.title}>Eaglespress</Text>
-        <Text style={styles.subtitleTitle}>Create your account</Text>
-        <Text style={styles.subtitle}>Join Eaglespress and stay informed.</Text>
-      </View>
-
-      {/* FORM */}
-      <View style={styles.form}>
-        {/* NAME */}
-        <Text style={styles.label}>Full name</Text>
-        <View style={styles.inputContainer}>
-          <Image
-            source={require("@/assets/images/user-icon.png")}
-            style={styles.icon}
-            contentFit="contain" // added
-          />
-          <TextInput
-            placeholder="Enter your full name"
-            placeholderTextColor="#9ca3af"
-            value={name}
-            onChangeText={setName}
-            style={styles.input}
-          />
-        </View>
-
-        {/* EMAIL */}
-        <Text style={styles.label}>Email address</Text>
-        <View style={styles.inputContainer}>
-          <Image
-            source={require("@/assets/images/envelop-icon.png")}
-            style={styles.icon}
-            contentFit="contain" // added
-          />
-          <TextInput
-            placeholder="Enter your email"
-            placeholderTextColor="#9ca3af"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            style={styles.input}
-          />
-        </View>
-
-        {/* PASSWORD */}
-        <Text style={styles.label}>Password</Text>
-        <View style={styles.inputContainer}>
-          <Image
-            source={require("@/assets/images/padlock-icon.png")}
-            style={styles.icon}
-            contentFit="contain" // added
-          />
-          <TextInput
-            placeholder="Create a password"
-            placeholderTextColor="#9ca3af"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={secureText}
-            style={styles.input}
-          />
-
-          <Pressable onPress={() => setSecureText((prev) => !prev)}>
+        {/* FORM */}
+        <View style={styles.form}>
+          {/* NAME */}
+          <Text style={styles.label}>Full name</Text>
+          <View style={styles.inputContainer}>
             <Image
-              source={
-                secureText
-                  ? require("@/assets/images/closed-eye-icon.png")
-                  : require("@/assets/images/open-eye-icon.png")
-              }
-              style={styles.eyeIcon}
-              contentFit="contain" // added
+              source={require("@/assets/images/user-icon.png")}
+              style={styles.icon}
+              contentFit="contain"
             />
+            <TextInput
+              placeholder="Enter your full name"
+              placeholderTextColor="#9ca3af"
+              value={name}
+              onChangeText={setName}
+              style={styles.input}
+            />
+          </View>
+
+          {/* EMAIL */}
+          <Text style={styles.label}>Email address</Text>
+          <View style={styles.inputContainer}>
+            <Image
+              source={require("@/assets/images/envelop-icon.png")}
+              style={styles.icon}
+              contentFit="contain"
+            />
+            <TextInput
+              placeholder="Enter your email"
+              placeholderTextColor="#9ca3af"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              style={styles.input}
+            />
+          </View>
+
+          {/* PASSWORD */}
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.inputContainer}>
+            <Image
+              source={require("@/assets/images/padlock-icon.png")}
+              style={styles.icon}
+              contentFit="contain"
+            />
+            <TextInput
+              placeholder="Create a password"
+              placeholderTextColor="#9ca3af"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={secureText}
+              style={styles.input}
+            />
+
+            <Pressable onPress={() => setSecureText((prev) => !prev)}>
+              <Image
+                source={
+                  secureText
+                    ? require("@/assets/images/closed-eye-icon.png")
+                    : require("@/assets/images/open-eye-icon.png")
+                }
+                style={styles.eyeIcon}
+                contentFit="contain"
+              />
+            </Pressable>
+          </View>
+
+          {/* PASSWORD RULES */}
+          <View style={styles.rulesContainer}>
+            <Text style={styles.rulesTitle}>
+              Password must be at least 8 characters
+            </Text>
+
+            <Rule text="At least 8 characters" valid={checks.min} />
+            <Rule text="One uppercase letter" valid={checks.upper} />
+            <Rule text="One lowercase letter" valid={checks.lower} />
+            <Rule
+              text="One number or special character"
+              valid={checks.number}
+            />
+          </View>
+
+          {/* REGISTER BUTTON */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              pressed && { opacity: 0.85 },
+            ]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Register</Text>
+            )}
           </Pressable>
         </View>
 
-        {/* PASSWORD RULES */}
-        <View style={styles.rulesContainer}>
-          <Text style={styles.rulesTitle}>
-            Password must be at least 8 characters
+        {/* FOOTER */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Already have an account?{" "}
+            <Text style={styles.link} onPress={() => router.push("/login")}>
+              Login
+            </Text>
           </Text>
-
-          <Rule text="At least 8 characters" valid={checks.min} />
-          <Rule text="One uppercase letter" valid={checks.upper} />
-          <Rule text="One lowercase letter" valid={checks.lower} />
-          <Rule text="One number or special character" valid={checks.number} />
         </View>
-
-        {/* REGISTER BUTTON */}
-        <Pressable
-          style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
-          onPress={handleRegister}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Register</Text>
-          )}
-        </Pressable>
-      </View>
-
-      {/* FOOTER */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Already have an account?{" "}
-          <Text style={styles.link} onPress={() => router.push("/login")}>
-            Login
-          </Text>
-        </Text>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -251,8 +266,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f9fafb",
+  },
+
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 70,
+    paddingBottom: 20,
   },
 
   header: {
@@ -376,7 +396,6 @@ const styles = StyleSheet.create({
 
   footer: {
     marginTop: "auto",
-    marginBottom: 20,
     alignItems: "center",
   },
 

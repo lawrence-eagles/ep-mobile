@@ -21,20 +21,10 @@ export default function EmailVerified() {
     hasHandled.current = true;
 
     const timer = setTimeout(() => {
-      if (!error) return; // only auto-redirect on error
+      if (error) return; // Do not auto-redirect on error; let the user read it
 
-      switch (error) {
-        case "invalid_token":
-          router.replace("/login?error=invalid_token");
-          break;
-
-        case "expired_token":
-          router.replace("/login?error=expired_token");
-          break;
-
-        default:
-          router.replace("/login?error=unknown");
-      }
+      // Auto-redirect on success
+      router.replace("/preferences/onboarding");
     }, 1500);
 
     return () => clearTimeout(timer);

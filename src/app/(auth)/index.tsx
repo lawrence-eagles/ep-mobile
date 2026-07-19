@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -22,6 +23,8 @@ export default function AuthIndex() {
   const handleSocialLogin = async (
     provider: "google" | "apple" | "facebook",
   ) => {
+    if (loadingProvider !== null) return;
+
     try {
       setLoadingProvider(provider);
 
@@ -36,7 +39,7 @@ export default function AuthIndex() {
         return;
       }
 
-      // ⚠️ Let OAuth redirect handle navigation
+      // OAuth redirect will handle navigation
     } catch (err: any) {
       Alert.alert("Error", err.message ?? "Something went wrong");
     } finally {
@@ -50,101 +53,114 @@ export default function AuthIndex() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.welcome}>Welcome to</Text>
-        <Text style={styles.title}>Eaglespress</Text>
-        <Text style={styles.subtitle}>Your AI powered news app</Text>
+    <ScrollView
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.container}>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <Text style={styles.welcome}>Welcome to</Text>
+          <Text style={styles.title}>Eaglespress</Text>
+          <Text style={styles.subtitle}>Your AI powered news app</Text>
+        </View>
+
+        {/* HERO IMAGE */}
+        <Image
+          source={require("@/assets/images/auth-hero-img-crop.png")}
+          style={styles.heroImage}
+          contentFit="contain"
+        />
+
+        {/* BUTTONS */}
+        <View style={styles.buttonsContainer}>
+          {/* Google */}
+          <Pressable
+            style={styles.socialButton}
+            onPress={() => handleSocialLogin("google")}
+            disabled={loadingProvider !== null}
+          >
+            {loadingProvider === "google" ? (
+              <ActivityIndicator />
+            ) : (
+              <>
+                <Image
+                  source={require("@/assets/images/google-original.svg")}
+                  style={styles.icon}
+                  contentFit="contain"
+                />
+                <Text style={styles.buttonText}>Continue with Google</Text>
+              </>
+            )}
+          </Pressable>
+
+          {/* Apple */}
+          <Pressable
+            style={styles.socialButton}
+            onPress={() => handleSocialLogin("apple")}
+            disabled={loadingProvider !== null}
+          >
+            {loadingProvider === "apple" ? (
+              <ActivityIndicator />
+            ) : (
+              <>
+                <Image
+                  source={require("@/assets/images/apple-original.svg")}
+                  style={styles.icon}
+                  contentFit="contain"
+                />
+                <Text style={styles.buttonText}>Continue with Apple</Text>
+              </>
+            )}
+          </Pressable>
+
+          {/* Facebook */}
+          <Pressable
+            style={styles.socialButton}
+            onPress={() => handleSocialLogin("facebook")}
+            disabled={loadingProvider !== null}
+          >
+            {loadingProvider === "facebook" ? (
+              <ActivityIndicator />
+            ) : (
+              <>
+                <Image
+                  source={require("@/assets/images/facebook-original.svg")}
+                  style={styles.icon}
+                  contentFit="contain"
+                />
+                <Text style={styles.buttonText}>Continue with Facebook</Text>
+              </>
+            )}
+          </Pressable>
+
+          {/* Email CTA */}
+          <Pressable style={styles.emailButton} onPress={handleEmailContinue}>
+            <Text style={styles.emailButtonText}>Continue with Email</Text>
+          </Pressable>
+        </View>
+
+        {/* FOOTER */}
+        <Text style={styles.footer}>
+          By continuing, you agree to our{" "}
+          <Text style={styles.link}>Terms & Privacy Policy</Text>
+        </Text>
       </View>
-
-      {/* HERO IMAGE */}
-      <Image
-        source={require("@/assets/images/auth-hero-img-crop.png")}
-        style={styles.heroImage}
-        contentFit="contain"
-      />
-
-      {/* BUTTONS */}
-      <View style={styles.buttonsContainer}>
-        {/* Google */}
-        <Pressable
-          style={styles.socialButton}
-          onPress={() => handleSocialLogin("google")}
-        >
-          {loadingProvider === "google" ? (
-            <ActivityIndicator />
-          ) : (
-            <>
-              <Image
-                source={require("@/assets/images/google-original.svg")}
-                style={styles.icon}
-                contentFit="contain" // added
-              />
-              <Text style={styles.buttonText}>Continue with Google</Text>
-            </>
-          )}
-        </Pressable>
-
-        {/* Apple */}
-        <Pressable
-          style={styles.socialButton}
-          onPress={() => handleSocialLogin("apple")}
-        >
-          {loadingProvider === "apple" ? (
-            <ActivityIndicator />
-          ) : (
-            <>
-              <Image
-                source={require("@/assets/images/apple-original.svg")}
-                style={styles.icon}
-                contentFit="contain" // added
-              />
-              <Text style={styles.buttonText}>Continue with Apple</Text>
-            </>
-          )}
-        </Pressable>
-
-        {/* Facebook */}
-        <Pressable
-          style={styles.socialButton}
-          onPress={() => handleSocialLogin("facebook")}
-        >
-          {loadingProvider === "facebook" ? (
-            <ActivityIndicator />
-          ) : (
-            <>
-              <Image
-                source={require("@/assets/images/facebook-original.svg")}
-                style={styles.icon}
-                contentFit="contain" // added
-              />
-              <Text style={styles.buttonText}>Continue with Facebook</Text>
-            </>
-          )}
-        </Pressable>
-
-        {/* Email CTA */}
-        <Pressable style={styles.emailButton} onPress={handleEmailContinue}>
-          <Text style={styles.emailButtonText}>Continue with Email</Text>
-        </Pressable>
-      </View>
-
-      {/* FOOTER */}
-      <Text style={styles.footer}>
-        By continuing, you agree to our{" "}
-        <Text style={styles.link}>Terms & Privacy Policy</Text>
-      </Text>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 80,
+    paddingBottom: 30,
     backgroundColor: "#fff",
+  },
+
+  container: {
+    flex: 1,
   },
 
   header: {
