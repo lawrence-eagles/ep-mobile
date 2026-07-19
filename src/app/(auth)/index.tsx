@@ -135,7 +135,11 @@ export default function AuthIndex() {
           </Pressable>
 
           {/* Email CTA */}
-          <Pressable style={styles.emailButton} onPress={handleEmailContinue}>
+          <Pressable
+            style={styles.emailButton}
+            onPress={handleEmailContinue}
+            disabled={loadingProvider !== null}
+          >
             <Text style={styles.emailButtonText}>Continue with Email</Text>
           </Pressable>
         </View>

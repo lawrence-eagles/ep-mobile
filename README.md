@@ -102,4 +102,6 @@ Facebook svg --- https://cdn.jsdelivr.net/gh/devicons/devicon/icons/facebook/fac
 Envelop icon --- https://img.icons8.com/ios-filled/50/9ca3af/new-post.png
 Padlock icon --- https://img.icons8.com/ios-filled/50/9ca3af/lock-2.png
 Open-eye icon --- https://img.icons8.com/ios-filled/50/9ca3af/visible.png
+
+the code above is my login.tsx code, i get this issue from code rabbit: The screens use fixed-height content inside non-scrollable root containers, making controls unreachable on smaller devices or when the keyboard is open. allow the login form and footer to scroll above the keyboard. fix this issue and return a complete login.tsx code. do not omit or miss anything. Note make the scroll bar invisible.
  -->

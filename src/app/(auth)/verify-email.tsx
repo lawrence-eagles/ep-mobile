@@ -1,5 +1,4 @@
 import { authClient } from "@/lib/auth-client";
-import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as Linking from "expo-linking";
 import { router, useLocalSearchParams } from "expo-router";
@@ -58,10 +57,10 @@ export default function VerifyEmail() {
   return (
     <View style={styles.container}>
       {/* Back */}
-      <Pressable onPress={() => router.back()} style={styles.back}>
-        {/* <Text style={styles.backText}>←</Text> */}
+      {/* <Text style={styles.backText}>←</Text> */}
+      {/* <Pressable onPress={() => router.back()} style={styles.back}>
         <Ionicons name="arrow-back" size={24} color="#0f172a" />
-      </Pressable>
+      </Pressable> */}
 
       {/* Illustration */}
       <Image

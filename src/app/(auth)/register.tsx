@@ -81,7 +81,7 @@ export default function Register() {
       }
 
       if (!data) {
-        router.push({
+        router.replace({
           pathname: "/verify-email",
           params: { email },
         });
@@ -89,7 +89,7 @@ export default function Register() {
       }
 
       if (!data.user.emailVerified) {
-        router.push({
+        router.replace({
           pathname: "/verify-email",
           params: { email },
         });

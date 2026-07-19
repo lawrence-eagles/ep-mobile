@@ -51,7 +51,7 @@ export default function LoginScreen() {
       }
 
       if (!data || !data.user.emailVerified) {
-        router.push({
+        router.replace({
           pathname: "/verify-email",
           params: { email },
         });
