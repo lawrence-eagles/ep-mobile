@@ -84,12 +84,12 @@ use zod for validation, use expo image, and use Pressable for buttons.
 in the image i uploaded upscale the hero-image illustration, make it a transparent background.
 
 # AI generated screens to do:
-1. download those icons gotten from online and use them in the expo image
-2. in the forgot password screen check the back arrow to make sure you use the correct icon -- the fix is in rest password use ionicons
+1. download those icons gotten from online and use them in the expo image ✅
+2. in the forgot password screen check the back arrow to make sure you use the correct icon -- the fix is in rest password use ionicons ✅
 3. make sure the forgot password envelop image shown on success and the text is styled correctly.
 4. make sure all expo images are linked correctly
-5. cross check the open eye close eye implementation in login, register and other forms.
-6. check the forgot password back button to make sure the style is ok
+5. cross check the open eye close eye implementation in login, register and other forms. ✅
+6. check the forgot password back button to make sure the style is ok ✅
 7. check the reset password wave and password eyes
 8. check the verify email back button to make sure the style is ok.
 9. check the apostrophe sign in login page.
@@ -102,9 +102,6 @@ Facebook svg --- https://cdn.jsdelivr.net/gh/devicons/devicon/icons/facebook/fac
 Envelop icon --- https://img.icons8.com/ios-filled/50/9ca3af/new-post.png
 Padlock icon --- https://img.icons8.com/ios-filled/50/9ca3af/lock-2.png
 Open-eye icon --- https://img.icons8.com/ios-filled/50/9ca3af/visible.png
-
-the code above is my login.tsx code, i get this issue from code rabbit: The screens use fixed-height content inside non-scrollable root containers, making controls unreachable on smaller devices or when the keyboard is open. allow the login form and footer to scroll above the keyboard. fix this issue and return a complete login.tsx code. do not omit or miss anything. Note make the scroll bar invisible.
-
 
 1. Open Settings
 Scroll to Developer options
