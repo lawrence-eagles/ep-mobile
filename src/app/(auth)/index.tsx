@@ -2,7 +2,7 @@ import { authClient } from "@/lib/auth-client";
 import { Image } from "expo-image";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,16 +16,21 @@ import {
 export default function AuthIndex() {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
+  // ✅ synchronous lock (prevents rapid multi-taps instantly)
+  const authLock = useRef(false);
+
   const callbackURL = Linking.createURL("/");
   const newUserCallbackURL = Linking.createURL("/preferences/onboarding");
 
-  // ✅ Handle social login dynamically
+  /* ================= SOCIAL LOGIN ================= */
   const handleSocialLogin = async (
     provider: "google" | "apple" | "facebook",
   ) => {
-    if (loadingProvider !== null) return;
+    // ✅ hard guard (instant, no race condition)
+    if (authLock.current) return;
 
     try {
+      authLock.current = true;
       setLoadingProvider(provider);
 
       const { error } = await authClient.signIn.social({
@@ -36,26 +41,42 @@ export default function AuthIndex() {
 
       if (error) {
         Alert.alert("Login Error", error.message);
+        authLock.current = false;
+        setLoadingProvider(null);
         return;
       }
 
       // OAuth redirect will handle navigation
     } catch (err: any) {
       Alert.alert("Error", err.message ?? "Something went wrong");
-    } finally {
+      authLock.current = false;
       setLoadingProvider(null);
     }
   };
 
-  // ✅ Continue with email
+  /* ================= EMAIL LOGIN ================= */
   const handleEmailContinue = () => {
+    if (authLock.current) return;
+
+    authLock.current = true;
+
     router.push("/login");
+
+    // unlock after navigation tick
+    setTimeout(() => {
+      authLock.current = false;
+    }, 500);
   };
+
+  const isLoading = loadingProvider !== null;
+
+  /* ================= UI ================= */
 
   return (
     <ScrollView
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <View style={styles.container}>
         {/* HEADER */}
@@ -73,12 +94,14 @@ export default function AuthIndex() {
         />
 
         {/* BUTTONS */}
-        <View style={styles.buttonsContainer}>
-          {/* Google */}
+        <View
+          style={[styles.buttonsContainer, isLoading && { opacity: 0.6 }]}
+          pointerEvents={isLoading ? "none" : "auto"} // ✅ disables ALL touches
+        >
+          {/* GOOGLE */}
           <Pressable
             style={styles.socialButton}
             onPress={() => handleSocialLogin("google")}
-            disabled={loadingProvider !== null}
           >
             {loadingProvider === "google" ? (
               <ActivityIndicator />
@@ -94,11 +117,10 @@ export default function AuthIndex() {
             )}
           </Pressable>
 
-          {/* Apple */}
+          {/* APPLE */}
           <Pressable
             style={styles.socialButton}
             onPress={() => handleSocialLogin("apple")}
-            disabled={loadingProvider !== null}
           >
             {loadingProvider === "apple" ? (
               <ActivityIndicator />
@@ -114,11 +136,10 @@ export default function AuthIndex() {
             )}
           </Pressable>
 
-          {/* Facebook */}
+          {/* FACEBOOK */}
           <Pressable
             style={styles.socialButton}
             onPress={() => handleSocialLogin("facebook")}
-            disabled={loadingProvider !== null}
           >
             {loadingProvider === "facebook" ? (
               <ActivityIndicator />
@@ -134,12 +155,8 @@ export default function AuthIndex() {
             )}
           </Pressable>
 
-          {/* Email CTA */}
-          <Pressable
-            style={styles.emailButton}
-            onPress={handleEmailContinue}
-            disabled={loadingProvider !== null}
-          >
+          {/* EMAIL */}
+          <Pressable style={styles.emailButton} onPress={handleEmailContinue}>
             <Text style={styles.emailButtonText}>Continue with Email</Text>
           </Pressable>
         </View>
@@ -153,6 +170,8 @@ export default function AuthIndex() {
     </ScrollView>
   );
 }
+
+/* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
   scrollContent: {
