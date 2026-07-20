@@ -71,7 +71,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -165,19 +165,19 @@ export default function LoginScreen() {
               <Text style={styles.loginText}>Login</Text>
             )}
           </Pressable>
-        </View>
 
-        {/* FOOTER */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Don&apos;t have an account?{" "}
-            <Text
-              style={styles.register}
-              onPress={() => router.push("/register")}
-            >
-              Register
+          {/* FOOTER */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Don&apos;t have an account?{" "}
+              <Text
+                style={styles.register}
+                onPress={() => router.push("/register")}
+              >
+                Register
+              </Text>
             </Text>
-          </Text>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   },
 
   footer: {
-    marginTop: "auto",
+    marginTop: 20,
     alignItems: "center",
   },
 

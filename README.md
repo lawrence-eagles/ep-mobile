@@ -104,4 +104,37 @@ Padlock icon --- https://img.icons8.com/ios-filled/50/9ca3af/lock-2.png
 Open-eye icon --- https://img.icons8.com/ios-filled/50/9ca3af/visible.png
 
 the code above is my login.tsx code, i get this issue from code rabbit: The screens use fixed-height content inside non-scrollable root containers, making controls unreachable on smaller devices or when the keyboard is open. allow the login form and footer to scroll above the keyboard. fix this issue and return a complete login.tsx code. do not omit or miss anything. Note make the scroll bar invisible.
+
+
+1. Open Settings
+Scroll to Developer options
+Turn ON:
+✅ USB Debugging
+
+2. Connect your phone to your computer
+3. On your phone:
+
+Swipe down notification panel
+Tap:
+“Charging this device via USB”
+Change it to:
+✅ File Transfer (MTP)
+4. run
+adb devices
+
+expected out put:
+List of devices attached
+R58M123ABC    device
+
+If you see unauthorized
+Look at your phone screen
+Tap Allow
+
+then run again
+adb devices
+
+then run
+npx expo run:android
+
+ip a -- to get pc ip address
  -->

@@ -39,13 +39,12 @@ const registerSchema = z.object({
 /* ================= COMPONENT ================= */
 
 export default function Register() {
-  const [name, setName] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [secureText, setSecureText] = useState<boolean>(true);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [secureText, setSecureText] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  /* ===== Password rule checks (live UI) ===== */
   const checks = useMemo(() => {
     return {
       min: passwordRules.minLength(password),
@@ -54,8 +53,6 @@ export default function Register() {
       number: passwordRules.number(password),
     };
   }, [password]);
-
-  /* ================= HANDLER ================= */
 
   const handleRegister = async () => {
     const result = registerSchema.safeParse({ name, email, password });
@@ -80,15 +77,7 @@ export default function Register() {
         return;
       }
 
-      if (!data) {
-        router.replace({
-          pathname: "/verify-email",
-          params: { email },
-        });
-        return;
-      }
-
-      if (!data.user.emailVerified) {
+      if (!data || !data.user.emailVerified) {
         router.replace({
           pathname: "/verify-email",
           params: { email },
@@ -111,12 +100,12 @@ export default function Register() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false} // ✅ hides scrollbar
+        showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}
       >
         {/* HEADER */}
         <View style={styles.header}>
@@ -199,7 +188,7 @@ export default function Register() {
             </Pressable>
           </View>
 
-          {/* PASSWORD RULES */}
+          {/* RULES */}
           <View style={styles.rulesContainer}>
             <Text style={styles.rulesTitle}>
               Password must be at least 8 characters
@@ -214,7 +203,7 @@ export default function Register() {
             />
           </View>
 
-          {/* REGISTER BUTTON */}
+          {/* BUTTON */}
           <Pressable
             style={({ pressed }) => [
               styles.button,
@@ -272,7 +261,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 70,
-    paddingBottom: 20,
+    paddingBottom: 80, // ✅ IMPORTANT: prevents keyboard overlap
   },
 
   header: {
@@ -395,7 +384,7 @@ const styles = StyleSheet.create({
   },
 
   footer: {
-    marginTop: "auto",
+    marginTop: 20,
     alignItems: "center",
   },
 

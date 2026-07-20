@@ -5,7 +5,6 @@ export default function RootLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "#0D0D0F" }, // edit this style
       }}
     >
       <Stack.Screen name="(auth)" options={{ animation: "fade" }} />

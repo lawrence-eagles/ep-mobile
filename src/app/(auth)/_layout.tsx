@@ -42,5 +42,11 @@ export default function RootLayout() {
     return <Redirect href={"/(tabs)"} />;
   }
 
-  return <Stack />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    />
+  );
 }

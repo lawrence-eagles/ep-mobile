@@ -4,7 +4,12 @@ import { Tabs } from "expo-router";
 export default function TabsLayout() {
   return (
     <ProtectedLayout>
-      <Tabs />
+      <Tabs
+        // i added this screenOptions
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
     </ProtectedLayout>
   );
 }
