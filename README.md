@@ -55,16 +55,59 @@ Join our community of developers creating universal apps.
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
 
-<!--
+# bash commands
+
+```bash
 npx expo prebuild
 npx expo run:android   # only first time, you still need to build from time to time
-npx expo start # latter
+npx expo start --dev-client # latter then press a
 
 nano android/gradle.properties
 org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m
 
 npx expo start -c
+```
 
+# Android phone setup
+
+1. Open Settings
+   Scroll to Developer options
+   Turn ON:
+   ✅ USB Debugging
+
+2. Connect your phone to your computer
+3. On your phone:
+
+Swipe down notification panel
+Tap:
+“Charging this device via USB”
+Change it to:
+✅ File Transfer (MTP) 4. run
+`adb devices`
+
+expected out put:
+
+```bash
+List of devices attached
+R58M123ABC device
+```
+
+If you see unauthorized
+Look at your phone screen
+Tap Allow
+
+then run again
+`adb devices`
+
+then run
+`npx expo run:android`
+
+follow up run
+`npx expo start --dev-client` then press a
+
+`ip a` -- to get pc ip address
+
+<!--
 # MAKE SURE TO USE THE SAME CONSISTENT SKY BLUE
 
 1. delete user account
@@ -103,38 +146,12 @@ Envelop icon --- https://img.icons8.com/ios-filled/50/9ca3af/new-post.png
 Padlock icon --- https://img.icons8.com/ios-filled/50/9ca3af/lock-2.png
 Open-eye icon --- https://img.icons8.com/ios-filled/50/9ca3af/visible.png
 
-1. Open Settings
-Scroll to Developer options
-Turn ON:
-✅ USB Debugging
+the code above is my LoadingScreen.tsx code, update the code by implementing the ui of the image i uploaded. return a production ready LoadingScreen.tsx code. do not omit or miss anything.
 
-2. Connect your phone to your computer
-3. On your phone:
+optimistic updates
+use react query
+us zustand only if necessary
+call backend controllers.
+use typescript
 
-Swipe down notification panel
-Tap:
-“Charging this device via USB”
-Change it to:
-✅ File Transfer (MTP)
-4. run
-adb devices
-
-expected out put:
-List of devices attached
-R58M123ABC    device
-
-If you see unauthorized
-Look at your phone screen
-Tap Allow
-
-then run again
-adb devices
-
-then run
-npx expo run:android
-
-follow up run
-npx expo start --dev-client then press a
-
-ip a -- to get pc ip address
  -->
