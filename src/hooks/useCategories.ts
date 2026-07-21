@@ -1,9 +1,6 @@
+import { getEnv } from "@/lib/env";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-// ==============================
-// CONFIG
-// ==============================
-const API_BASE_URL = "YOUR_API_URL"; // 🔥 replace
+import { useState } from "react";
 
 // ==============================
 // TYPES
@@ -20,61 +17,88 @@ type CategoriesResponse = {
   categories: Category[];
 };
 
+type Context = { previous?: Category[] };
+
 // ==============================
-// API FUNCTIONS
+// HELPERS
 // ==============================
-const fetchCategories = async (): Promise<Category[]> => {
-  const res = await fetch(`${API_BASE_URL}/categories`, {
-    credentials: "include",
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch categories");
-  }
-
-  const data: CategoriesResponse = await res.json();
-
-  if (!data.success) {
-    throw new Error("Invalid response");
-  }
-
-  return data.categories;
+const getErrorMessage = (err: unknown): string => {
+  if (err instanceof Error) return err.message;
+  return "Something went wrong";
 };
 
-const followCategory = async (categoryId: string) => {
-  const res = await fetch(`${API_BASE_URL}/follow`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ categoryId }),
-  });
-
-  if (!res.ok) {
-    throw new Error("Follow failed");
-  }
-
-  return res.json();
-};
-
-const unfollowCategory = async (categoryId: string) => {
-  const res = await fetch(`${API_BASE_URL}/unfollow/${categoryId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
-
-  if (!res.ok) {
-    throw new Error("Unfollow failed");
-  }
-
-  return res.json();
-};
-
+// ==============================
+// HOOK
+// ==============================
 export const useCategories = () => {
+  const [activeId, setActiveId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
+  // ✅ SAFE env usage (inside hook)
+  const env = getEnv();
+  const API_BASE_URL = env.BACKEND_URL;
+
   // ==============================
-  // FETCH (REACT QUERY)
+  // API FUNCTIONS (NOW SCOPED SAFELY)
   // ==============================
+  const fetchCategories = async (): Promise<Category[]> => {
+    const res = await fetch(`${API_BASE_URL}/categories`, {
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch categories");
+    }
+
+    const data: CategoriesResponse = await res.json();
+
+    if (!data.success) {
+      throw new Error("Invalid response");
+    }
+
+    return data.categories;
+  };
+
+  const followCategory = async (categoryId: string) => {
+    const res = await fetch(`${API_BASE_URL}/follow`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ categoryId }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Follow failed");
+    }
+
+    return res.json();
+  };
+
+  const unfollowCategory = async (categoryId: string) => {
+    const res = await fetch(`${API_BASE_URL}/unfollow/${categoryId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      throw new Error("Unfollow failed");
+    }
+
+    return res.json();
+  };
+
+  // ==============================
+  // FETCH
+  // ==============================
+  //   const {
+  //     data: categories = [],
+  //     isLoading,
+  //     isError,
+  //   } = useQuery({
+  //     queryKey: ["categories"],
+  //     queryFn: fetchCategories,
+  //   });
+
   const {
     data: categories = [],
     isLoading,
@@ -82,15 +106,20 @@ export const useCategories = () => {
   } = useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategories,
+    staleTime: 1000 * 60 * 5, // 5 mins
+    retry: 2,
   });
 
   // ==============================
-  // FOLLOW MUTATION (OPTIMISTIC)
+  // FOLLOW MUTATION
   // ==============================
   const followMutation = useMutation({
+    mutationKey: ["followCategory"],
     mutationFn: followCategory,
 
-    onMutate: async (categoryId: string) => {
+    onMutate: async (categoryId: string): Promise<Context> => {
+      setActiveId(categoryId);
+
       await queryClient.cancelQueries({ queryKey: ["categories"] });
 
       const previous = queryClient.getQueryData<Category[]>(["categories"]);
@@ -102,24 +131,38 @@ export const useCategories = () => {
       return { previous };
     },
 
-    onError: (_err, _id, context) => {
+    // ✅ ADD HERE
+    onSuccess: (_data, categoryId) => {
+      queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
+        old.map((c) => (c.id === categoryId ? { ...c, isFollowing: true } : c)),
+      );
+    },
+
+    onError: (err, _id, context) => {
       if (context?.previous) {
         queryClient.setQueryData(["categories"], context.previous);
       }
+
+      const message = getErrorMessage(err);
+      console.error("Follow error:", message);
+      alert(message);
     },
 
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      setActiveId(null);
     },
   });
 
   // ==============================
-  // UNFOLLOW MUTATION (OPTIMISTIC)
+  // UNFOLLOW MUTATION
   // ==============================
   const unfollowMutation = useMutation({
+    mutationKey: ["unfollowCategory"],
     mutationFn: unfollowCategory,
 
-    onMutate: async (categoryId: string) => {
+    onMutate: async (categoryId: string): Promise<Context> => {
+      setActiveId(categoryId);
+
       await queryClient.cancelQueries({ queryKey: ["categories"] });
 
       const previous = queryClient.getQueryData<Category[]>(["categories"]);
@@ -133,14 +176,27 @@ export const useCategories = () => {
       return { previous };
     },
 
-    onError: (_err, _id, context) => {
+    // ✅ ADD HERE
+    onSuccess: (_data, categoryId) => {
+      queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
+        old.map((c) =>
+          c.id === categoryId ? { ...c, isFollowing: false } : c,
+        ),
+      );
+    },
+
+    onError: (err, _id, context) => {
       if (context?.previous) {
         queryClient.setQueryData(["categories"], context.previous);
       }
+
+      const message = getErrorMessage(err);
+      console.error("Unfollow error:", message);
+      alert(message);
     },
 
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      setActiveId(null);
     },
   });
 
@@ -148,7 +204,11 @@ export const useCategories = () => {
     categories,
     isLoading,
     isError,
-    follow: followMutation.mutate,
-    unfollow: unfollowMutation.mutate,
+    activeId,
+    followMutation,
+    unfollowMutation,
+
+    // ✅ helpful derived state (optional)
+    isMutating: followMutation.isPending || unfollowMutation.isPending,
   };
 };

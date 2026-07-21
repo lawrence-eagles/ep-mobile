@@ -1,5 +1,6 @@
+import { useCategories } from "@/hooks/useCategories";
 import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useCallback } from "react";
 import {
   ActivityIndicator,
@@ -13,11 +14,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // ==============================
-// CONFIG
-// ==============================
-const API_BASE_URL = "YOUR_API_URL"; // 🔥 replace
-
-// ==============================
 // TYPES
 // ==============================
 type Category = {
@@ -25,60 +21,6 @@ type Category = {
   name: string;
   slug: string;
   isFollowing: boolean;
-};
-
-type CategoriesResponse = {
-  success: boolean;
-  categories: Category[];
-};
-
-// ==============================
-// API FUNCTIONS
-// ==============================
-const fetchCategories = async (): Promise<Category[]> => {
-  const res = await fetch(`${API_BASE_URL}/categories`, {
-    credentials: "include",
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch categories");
-  }
-
-  const data: CategoriesResponse = await res.json();
-
-  if (!data.success) {
-    throw new Error("Invalid response");
-  }
-
-  return data.categories;
-};
-
-const followCategory = async (categoryId: string) => {
-  const res = await fetch(`${API_BASE_URL}/follow`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ categoryId }),
-  });
-
-  if (!res.ok) {
-    throw new Error("Follow failed");
-  }
-
-  return res.json();
-};
-
-const unfollowCategory = async (categoryId: string) => {
-  const res = await fetch(`${API_BASE_URL}/unfollow/${categoryId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
-
-  if (!res.ok) {
-    throw new Error("Unfollow failed");
-  }
-
-  return res.json();
 };
 
 // ==============================
@@ -109,79 +51,15 @@ const getCategoryIcon = (name: string) => {
 // COMPONENT
 // ==============================
 const Onboarding = () => {
-  const queryClient = useQueryClient();
-
-  // ==============================
-  // FETCH (REACT QUERY)
-  // ==============================
   const {
-    data: categories = [],
+    categories,
     isLoading,
     isError,
-  } = useQuery({
-    queryKey: ["categories"],
-    queryFn: fetchCategories,
-  });
-
-  // ==============================
-  // FOLLOW MUTATION (OPTIMISTIC)
-  // ==============================
-  const followMutation = useMutation({
-    mutationFn: followCategory,
-
-    onMutate: async (categoryId: string) => {
-      await queryClient.cancelQueries({ queryKey: ["categories"] });
-
-      const previous = queryClient.getQueryData<Category[]>(["categories"]);
-
-      queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
-        old.map((c) => (c.id === categoryId ? { ...c, isFollowing: true } : c)),
-      );
-
-      return { previous };
-    },
-
-    onError: (_err, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["categories"], context.previous);
-      }
-    },
-
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-    },
-  });
-
-  // ==============================
-  // UNFOLLOW MUTATION (OPTIMISTIC)
-  // ==============================
-  const unfollowMutation = useMutation({
-    mutationFn: unfollowCategory,
-
-    onMutate: async (categoryId: string) => {
-      await queryClient.cancelQueries({ queryKey: ["categories"] });
-
-      const previous = queryClient.getQueryData<Category[]>(["categories"]);
-
-      queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
-        old.map((c) =>
-          c.id === categoryId ? { ...c, isFollowing: false } : c,
-        ),
-      );
-
-      return { previous };
-    },
-
-    onError: (_err, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["categories"], context.previous);
-      }
-    },
-
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-    },
-  });
+    followMutation,
+    unfollowMutation,
+    isMutating,
+    activeId,
+  } = useCategories();
 
   // ==============================
   // TOGGLE HANDLER
@@ -202,21 +80,32 @@ const Onboarding = () => {
   // ==============================
   // RENDER ITEM
   // ==============================
-  const renderItem = ({ item }: { item: Category }) => (
-    <Pressable style={styles.card} onPress={() => handleToggle(item)}>
-      <View style={styles.left}>
-        <View style={styles.iconContainer}>{getCategoryIcon(item.name)}</View>
-        <Text style={styles.categoryText}>{item.name}</Text>
-      </View>
-
-      <View
-        style={[styles.checkbox, item.isFollowing && styles.checkboxActive]}
+  const renderItem = useCallback(
+    ({ item }: { item: Category }) => (
+      <Pressable
+        style={styles.card}
+        onPress={() => handleToggle(item)}
+        disabled={activeId === item.id}
       >
-        {item.isFollowing && (
-          <Ionicons name="checkmark" size={16} color="#fff" />
-        )}
-      </View>
-    </Pressable>
+        <View style={styles.left}>
+          <View style={styles.iconContainer}>{getCategoryIcon(item.name)}</View>
+          <Text style={styles.categoryText}>{item.name}</Text>
+        </View>
+
+        <View
+          style={[
+            styles.checkbox,
+            item.isFollowing && styles.checkboxActive,
+            activeId === item.id && { opacity: 0.5 },
+          ]}
+        >
+          {item.isFollowing && (
+            <Ionicons name="checkmark" size={16} color="#fff" />
+          )}
+        </View>
+      </Pressable>
+    ),
+    [handleToggle, isMutating],
   );
 
   // ==============================
@@ -260,6 +149,8 @@ const Onboarding = () => {
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140 }}
+        removeClippedSubviews
+        initialNumToRender={10}
       />
 
       {/* FOOTER */}
@@ -267,11 +158,12 @@ const Onboarding = () => {
         <Pressable
           style={[styles.button, selectedCount === 0 && styles.buttonDisabled]}
           disabled={selectedCount === 0}
+          onPress={() => router.push("/(tabs)")}
         >
           <Text style={styles.buttonText}>Continue</Text>
         </Pressable>
 
-        <Pressable>
+        <Pressable onPress={() => router.push("/explore")}>
           <Text style={styles.skip}>Skip for now</Text>
         </Pressable>
       </View>
