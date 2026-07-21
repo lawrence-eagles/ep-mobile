@@ -1,4 +1,5 @@
 import { useCategories } from "@/hooks/useCategories";
+import { Category } from "@/types";
 import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback } from "react";
@@ -12,16 +13,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// ==============================
-// TYPES
-// ==============================
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  isFollowing: boolean;
-};
 
 // ==============================
 // ICON MAPPING
@@ -58,7 +49,7 @@ const Onboarding = () => {
     followMutation,
     unfollowMutation,
     isMutating,
-    activeId,
+    activeIds,
   } = useCategories();
 
   // ==============================
@@ -72,7 +63,7 @@ const Onboarding = () => {
         followMutation.mutate(item.id);
       }
     },
-    [followMutation, unfollowMutation],
+    [followMutation.mutate, unfollowMutation.mutate],
   );
 
   const selectedCount = categories.filter((c) => c.isFollowing).length;
@@ -85,7 +76,7 @@ const Onboarding = () => {
       <Pressable
         style={styles.card}
         onPress={() => handleToggle(item)}
-        disabled={activeId === item.id}
+        disabled={activeIds.has(item.id)}
       >
         <View style={styles.left}>
           <View style={styles.iconContainer}>{getCategoryIcon(item.name)}</View>
@@ -96,7 +87,7 @@ const Onboarding = () => {
           style={[
             styles.checkbox,
             item.isFollowing && styles.checkboxActive,
-            activeId === item.id && { opacity: 0.5 },
+            activeIds.has(item.id) && { opacity: 0.5 },
           ]}
         >
           {item.isFollowing && (
@@ -105,7 +96,7 @@ const Onboarding = () => {
         </View>
       </Pressable>
     ),
-    [handleToggle, isMutating],
+    [handleToggle, isMutating, activeIds],
   );
 
   // ==============================

@@ -1,23 +1,20 @@
 import { getEnv } from "@/lib/env";
+import { Category } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 // ==============================
 // TYPES
 // ==============================
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  isFollowing: boolean;
-};
-
 type CategoriesResponse = {
   success: boolean;
   categories: Category[];
 };
 
-type Context = { previous?: Category[] };
+type Context = {
+  categoryId: string;
+  previousValue: boolean;
+};
 
 // ==============================
 // HELPERS
@@ -31,30 +28,27 @@ const getErrorMessage = (err: unknown): string => {
 // HOOK
 // ==============================
 export const useCategories = () => {
-  const [activeId, setActiveId] = useState<string | null>(null);
+  // ✅ FIX: support multiple concurrent mutations
+  const [activeIds, setActiveIds] = useState<Set<string>>(new Set());
+
   const queryClient = useQueryClient();
 
-  // ✅ SAFE env usage (inside hook)
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
   // ==============================
-  // API FUNCTIONS (NOW SCOPED SAFELY)
+  // API FUNCTIONS
   // ==============================
   const fetchCategories = async (): Promise<Category[]> => {
     const res = await fetch(`${API_BASE_URL}/categories`, {
       credentials: "include",
     });
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch categories");
-    }
+    if (!res.ok) throw new Error("Failed to fetch categories");
 
     const data: CategoriesResponse = await res.json();
 
-    if (!data.success) {
-      throw new Error("Invalid response");
-    }
+    if (!data.success) throw new Error("Invalid response");
 
     return data.categories;
   };
@@ -67,9 +61,7 @@ export const useCategories = () => {
       body: JSON.stringify({ categoryId }),
     });
 
-    if (!res.ok) {
-      throw new Error("Follow failed");
-    }
+    if (!res.ok) throw new Error("Follow failed");
 
     return res.json();
   };
@@ -80,9 +72,7 @@ export const useCategories = () => {
       credentials: "include",
     });
 
-    if (!res.ok) {
-      throw new Error("Unfollow failed");
-    }
+    if (!res.ok) throw new Error("Unfollow failed");
 
     return res.json();
   };
@@ -90,15 +80,6 @@ export const useCategories = () => {
   // ==============================
   // FETCH
   // ==============================
-  //   const {
-  //     data: categories = [],
-  //     isLoading,
-  //     isError,
-  //   } = useQuery({
-  //     queryKey: ["categories"],
-  //     queryFn: fetchCategories,
-  //   });
-
   const {
     data: categories = [],
     isLoading,
@@ -106,9 +87,24 @@ export const useCategories = () => {
   } = useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategories,
-    staleTime: 1000 * 60 * 5, // 5 mins
+    staleTime: 1000 * 60 * 5,
     retry: 2,
   });
+
+  // ==============================
+  // HELPERS (ACTIVE IDS)
+  // ==============================
+  const addActive = (id: string) => {
+    setActiveIds((prev) => new Set(prev).add(id));
+  };
+
+  const removeActive = (id: string) => {
+    setActiveIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
 
   // ==============================
   // FOLLOW MUTATION
@@ -118,29 +114,31 @@ export const useCategories = () => {
     mutationFn: followCategory,
 
     onMutate: async (categoryId: string): Promise<Context> => {
-      setActiveId(categoryId);
+      addActive(categoryId);
 
       await queryClient.cancelQueries({ queryKey: ["categories"] });
 
       const previous = queryClient.getQueryData<Category[]>(["categories"]);
 
+      const prevValue =
+        previous?.find((c) => c.id === categoryId)?.isFollowing ?? false;
+
       queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
         old.map((c) => (c.id === categoryId ? { ...c, isFollowing: true } : c)),
       );
 
-      return { previous };
-    },
-
-    // ✅ ADD HERE
-    onSuccess: (_data, categoryId) => {
-      queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
-        old.map((c) => (c.id === categoryId ? { ...c, isFollowing: true } : c)),
-      );
+      return { categoryId, previousValue: prevValue };
     },
 
     onError: (err, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["categories"], context.previous);
+      if (context) {
+        queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
+          old.map((c) =>
+            c.id === context.categoryId
+              ? { ...c, isFollowing: context.previousValue }
+              : c,
+          ),
+        );
       }
 
       const message = getErrorMessage(err);
@@ -148,8 +146,14 @@ export const useCategories = () => {
       alert(message);
     },
 
-    onSettled: () => {
-      setActiveId(null);
+    onSuccess: (_data, categoryId) => {
+      queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
+        old.map((c) => (c.id === categoryId ? { ...c, isFollowing: true } : c)),
+      );
+    },
+
+    onSettled: (_data, _err, categoryId) => {
+      removeActive(categoryId);
     },
   });
 
@@ -161,11 +165,14 @@ export const useCategories = () => {
     mutationFn: unfollowCategory,
 
     onMutate: async (categoryId: string): Promise<Context> => {
-      setActiveId(categoryId);
+      addActive(categoryId);
 
       await queryClient.cancelQueries({ queryKey: ["categories"] });
 
       const previous = queryClient.getQueryData<Category[]>(["categories"]);
+
+      const prevValue =
+        previous?.find((c) => c.id === categoryId)?.isFollowing ?? false;
 
       queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
         old.map((c) =>
@@ -173,10 +180,25 @@ export const useCategories = () => {
         ),
       );
 
-      return { previous };
+      return { categoryId, previousValue: prevValue };
     },
 
-    // ✅ ADD HERE
+    onError: (err, _id, context) => {
+      if (context) {
+        queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
+          old.map((c) =>
+            c.id === context.categoryId
+              ? { ...c, isFollowing: context.previousValue }
+              : c,
+          ),
+        );
+      }
+
+      const message = getErrorMessage(err);
+      console.error("Unfollow error:", message);
+      alert(message);
+    },
+
     onSuccess: (_data, categoryId) => {
       queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
         old.map((c) =>
@@ -185,18 +207,8 @@ export const useCategories = () => {
       );
     },
 
-    onError: (err, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["categories"], context.previous);
-      }
-
-      const message = getErrorMessage(err);
-      console.error("Unfollow error:", message);
-      alert(message);
-    },
-
-    onSettled: () => {
-      setActiveId(null);
+    onSettled: (_data, _err, categoryId) => {
+      removeActive(categoryId);
     },
   });
 
@@ -204,11 +216,13 @@ export const useCategories = () => {
     categories,
     isLoading,
     isError,
-    activeId,
+
+    // ✅ expose set instead of single id
+    activeIds,
+
     followMutation,
     unfollowMutation,
 
-    // ✅ helpful derived state (optional)
     isMutating: followMutation.isPending || unfollowMutation.isPending,
   };
 };
