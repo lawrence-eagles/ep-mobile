@@ -79,6 +79,7 @@ in the image i uploaded upscale the hero-image illustration, make it a transpare
 7. check the reset password wave and password eyes
 8. check the verify email back button to make sure the style is ok.
 9. check the apostrophe sign in login page.
+10. Add ad injection every 4 posts (you already planned this) -- in for-you feed
 
 Brand blue: #2563eb
 Google svg --- https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg
@@ -91,10 +92,28 @@ Open-eye icon --- https://img.icons8.com/ios-filled/50/9ca3af/visible.png
 
 the code above is my LoadingScreen.tsx code, update the code by implementing the ui of the image i uploaded. return a production ready LoadingScreen.tsx code. do not omit or miss anything.
 
-optimistic updates
+use zustand only if necessary
+// router.push(`/post/${item.slug}`)
+router.push({
+   pathname: "/post/[slug]",
+   params: { slug: item.slug },
+})
+
+use expo image
+use pressable
 use react query
-us zustand only if necessary
+implement optimistic updates for the like/unlike and the bookmarks/unbookmarks
 call backend controllers.
 use typescript
+use the improvements already applied in the useCategories.ts hook and the onboarding.tsx code
+when the comment icon is clicked it should open the post --- that is it should link to the single post.
+the user profile image should link to /preferences/profile
+implement infinite scroll to match the backend implementation
+
+1. Blur card background (expo-blur)
+2. Better icons (lucide-react-native)
+3. Time formatter ("2h ago") use date-fns
+
+ForYouFeed index.tsx code
 
  -->
