@@ -1,7 +1,7 @@
 import { getEnv } from "@/lib/env";
 import { Category } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 // ==============================
 // TYPES
@@ -14,6 +14,7 @@ type CategoriesResponse = {
 type Context = {
   categoryId: string;
   previousValue: boolean;
+  version: number;
 };
 
 // ==============================
@@ -28,13 +29,60 @@ const getErrorMessage = (err: unknown): string => {
 // HOOK
 // ==============================
 export const useCategories = () => {
-  // ✅ FIX: support multiple concurrent mutations
-  const [activeIds, setActiveIds] = useState<Set<string>>(new Set());
+  // ✅ Track active requests per ID (count, not just membership)
+  const [activeCounts, setActiveCounts] = useState<Map<string, number>>(
+    new Map(),
+  );
+
+  // ✅ Track latest version per ID
+  const versionRef = useRef<Map<string, number>>(new Map());
 
   const queryClient = useQueryClient();
 
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
+
+  // ==============================
+  // ACTIVE HELPERS
+  // ==============================
+  const incrementActive = (id: string) => {
+    setActiveCounts((prev) => {
+      const next = new Map(prev);
+      next.set(id, (next.get(id) ?? 0) + 1);
+      return next;
+    });
+  };
+
+  const decrementActive = (id: string) => {
+    setActiveCounts((prev) => {
+      const next = new Map(prev);
+      const count = (next.get(id) ?? 1) - 1;
+
+      if (count <= 0) {
+        next.delete(id);
+      } else {
+        next.set(id, count);
+      }
+
+      return next;
+    });
+  };
+
+  const isActive = (id: string) => activeCounts.has(id);
+
+  // ==============================
+  // VERSION HELPERS
+  // ==============================
+  const nextVersion = (id: string) => {
+    const current = versionRef.current.get(id) ?? 0;
+    const next = current + 1;
+    versionRef.current.set(id, next);
+    return next;
+  };
+
+  const isLatest = (id: string, version: number) => {
+    return versionRef.current.get(id) === version;
+  };
 
   // ==============================
   // API FUNCTIONS
@@ -92,21 +140,6 @@ export const useCategories = () => {
   });
 
   // ==============================
-  // HELPERS (ACTIVE IDS)
-  // ==============================
-  const addActive = (id: string) => {
-    setActiveIds((prev) => new Set(prev).add(id));
-  };
-
-  const removeActive = (id: string) => {
-    setActiveIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  };
-
-  // ==============================
   // FOLLOW MUTATION
   // ==============================
   const followMutation = useMutation({
@@ -114,24 +147,26 @@ export const useCategories = () => {
     mutationFn: followCategory,
 
     onMutate: async (categoryId: string): Promise<Context> => {
-      addActive(categoryId);
+      incrementActive(categoryId);
+
+      const version = nextVersion(categoryId);
 
       await queryClient.cancelQueries({ queryKey: ["categories"] });
 
       const previous = queryClient.getQueryData<Category[]>(["categories"]);
-
       const prevValue =
         previous?.find((c) => c.id === categoryId)?.isFollowing ?? false;
 
+      // optimistic update
       queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
         old.map((c) => (c.id === categoryId ? { ...c, isFollowing: true } : c)),
       );
 
-      return { categoryId, previousValue: prevValue };
+      return { categoryId, previousValue: prevValue, version };
     },
 
     onError: (err, _id, context) => {
-      if (context) {
+      if (context && isLatest(context.categoryId, context.version)) {
         queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
           old.map((c) =>
             c.id === context.categoryId
@@ -146,14 +181,18 @@ export const useCategories = () => {
       alert(message);
     },
 
-    onSuccess: (_data, categoryId) => {
-      queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
-        old.map((c) => (c.id === categoryId ? { ...c, isFollowing: true } : c)),
-      );
+    onSuccess: (_data, categoryId, context) => {
+      if (context && isLatest(categoryId, context.version)) {
+        queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
+          old.map((c) =>
+            c.id === categoryId ? { ...c, isFollowing: true } : c,
+          ),
+        );
+      }
     },
 
     onSettled: (_data, _err, categoryId) => {
-      removeActive(categoryId);
+      decrementActive(categoryId);
     },
   });
 
@@ -165,12 +204,13 @@ export const useCategories = () => {
     mutationFn: unfollowCategory,
 
     onMutate: async (categoryId: string): Promise<Context> => {
-      addActive(categoryId);
+      incrementActive(categoryId);
+
+      const version = nextVersion(categoryId);
 
       await queryClient.cancelQueries({ queryKey: ["categories"] });
 
       const previous = queryClient.getQueryData<Category[]>(["categories"]);
-
       const prevValue =
         previous?.find((c) => c.id === categoryId)?.isFollowing ?? false;
 
@@ -180,11 +220,11 @@ export const useCategories = () => {
         ),
       );
 
-      return { categoryId, previousValue: prevValue };
+      return { categoryId, previousValue: prevValue, version };
     },
 
     onError: (err, _id, context) => {
-      if (context) {
+      if (context && isLatest(context.categoryId, context.version)) {
         queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
           old.map((c) =>
             c.id === context.categoryId
@@ -199,16 +239,18 @@ export const useCategories = () => {
       alert(message);
     },
 
-    onSuccess: (_data, categoryId) => {
-      queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
-        old.map((c) =>
-          c.id === categoryId ? { ...c, isFollowing: false } : c,
-        ),
-      );
+    onSuccess: (_data, categoryId, context) => {
+      if (context && isLatest(categoryId, context.version)) {
+        queryClient.setQueryData<Category[]>(["categories"], (old = []) =>
+          old.map((c) =>
+            c.id === categoryId ? { ...c, isFollowing: false } : c,
+          ),
+        );
+      }
     },
 
     onSettled: (_data, _err, categoryId) => {
-      removeActive(categoryId);
+      decrementActive(categoryId);
     },
   });
 
@@ -217,8 +259,8 @@ export const useCategories = () => {
     isLoading,
     isError,
 
-    // ✅ expose set instead of single id
-    activeIds,
+    // ✅ expose helper instead of raw Set
+    isActive,
 
     followMutation,
     unfollowMutation,

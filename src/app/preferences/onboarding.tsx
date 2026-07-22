@@ -49,7 +49,7 @@ const Onboarding = () => {
     followMutation,
     unfollowMutation,
     isMutating,
-    activeIds,
+    isActive,
   } = useCategories();
 
   // ==============================
@@ -76,7 +76,7 @@ const Onboarding = () => {
       <Pressable
         style={styles.card}
         onPress={() => handleToggle(item)}
-        disabled={activeIds.has(item.id)}
+        disabled={isActive(item.id)}
       >
         <View style={styles.left}>
           <View style={styles.iconContainer}>{getCategoryIcon(item.name)}</View>
@@ -87,7 +87,7 @@ const Onboarding = () => {
           style={[
             styles.checkbox,
             item.isFollowing && styles.checkboxActive,
-            activeIds.has(item.id) && { opacity: 0.5 },
+            isActive(item.id) && { opacity: 0.5 },
           ]}
         >
           {item.isFollowing && (
