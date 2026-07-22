@@ -46,7 +46,7 @@ then run
 `npx expo run:android`
 
 follow up run
-`npx expo start --dev-client` then press a
+`npx expo start --dev-client` then press `a`
 
 `ip a` -- to get pc ip address
 
