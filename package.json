@@ -6,6 +6,7 @@
     "@better-auth/expo": "^1.6.23",
     "@expo/ui": "~57.0.4",
     "@expo/vector-icons": "^15.0.2",
+    "@tanstack/react-query": "^5.101.4",
     "better-auth": "^1.6.23",
     "expo": "~57.0.4",
     "expo-constants": "~57.0.3",
