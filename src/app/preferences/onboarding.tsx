@@ -96,7 +96,7 @@ const Onboarding = () => {
         </View>
       </Pressable>
     ),
-    [handleToggle, isMutating, activeIds],
+    [handleToggle, isMutating, isActive],
   );
 
   // ==============================
