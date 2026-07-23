@@ -105,15 +105,24 @@ use react query
 implement optimistic updates for the like/unlike and the bookmarks/unbookmarks
 call backend controllers.
 use typescript
+use SafeAreaView
 use the improvements already applied in the useCategories.ts hook and the onboarding.tsx code
 when the comment icon is clicked it should open the post --- that is it should link to the single post.
 the user profile image should link to /preferences/profile
 implement infinite scroll to match the backend implementation
+make sure to handle when data there is no posts
 
 1. Blur card background (expo-blur)
 2. Better icons (lucide-react-native)
 3. Time formatter ("2h ago") use date-fns
 
 ForYouFeed index.tsx code
+onboarding.tsx
+useCategories.ts
+
+NOTE ALL THESE CREDENTIAL INCLUDE NEED TO BE SOLVED THE BETTER AUTH WAY
+NOTE THAT SHARE APP FEATURE THAT REQUIRES A ROUTE TO BE CALLED FOR ATTRIBUTION.
+NOTE UPDATE ROUTES IN ALL FETCH HOOKS
+NOTE ALLOW USERS TO UPLOAD PROFILE IMAGE
 
  -->

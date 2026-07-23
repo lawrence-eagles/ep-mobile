@@ -1,10 +1,8 @@
-import { getEnv } from "@/lib/env";
-import {
-  InfiniteData,
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import EmptyHomeFeedState from "@/components/EmptyHomeFeedState";
+import { useAuth } from "@/hooks/useAuth";
+import { useForYouFeedInfiniteScroll } from "@/hooks/useForYouFeedInfiniteScroll";
+import { useForYouFeedMutations } from "@/hooks/useForYouFeedMutations";
+import { Post } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
@@ -15,257 +13,25 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  StyleSheet,
   Text,
   View,
 } from "react-native";
-
-// ==============================
-// TYPES
-// ==============================
-type Post = {
-  id: string;
-  title: string;
-  slug: string;
-  imageUrl: string | null;
-  summary: string | null;
-  createdAt: string;
-  category: string | null;
-  sourceName: string | null;
-  likesCount: number;
-  commentsCount: number;
-  isLiked: boolean;
-  isBookmarked: boolean;
-};
-
-type FeedResponse = {
-  items: Post[];
-  nextCursor: string | null;
-};
-
-// ==============================
-// HOOK
-// ==============================
-const useForYouFeed = () => {
-  const env = getEnv();
-  const API_BASE_URL = env.BACKEND_URL;
-
-  return useInfiniteQuery<
-    FeedResponse,
-    Error,
-    InfiniteData<FeedResponse>,
-    ["forYouFeed"],
-    string | undefined
-  >({
-    queryKey: ["forYouFeed"],
-
-    // ✅ FIX 1: correct QueryFunction typing
-    queryFn: async ({ pageParam }) => {
-      const cursor = pageParam;
-
-      const url = cursor
-        ? `${API_BASE_URL}/feed?cursor=${cursor}`
-        : `${API_BASE_URL}/feed`;
-
-      const res = await fetch(url, { credentials: "include" });
-
-      if (!res.ok) throw new Error("Failed to fetch feed");
-
-      return res.json();
-    },
-
-    initialPageParam: undefined,
-
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-  });
-};
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // ==============================
 // COMPONENT
 // ==============================
 const ForYouFeed = () => {
-  const queryClient = useQueryClient();
-  const env = getEnv();
-  const API_BASE_URL = env.BACKEND_URL;
-
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useForYouFeed();
+    useForYouFeedInfiniteScroll();
 
-  // ✅ FIX 2: fully type-safe flatten
+  const { bookmarkMutation, unbookmarkMutation, likeMutation, unlikeMutation } =
+    useForYouFeedMutations();
+
+  const { user } = useAuth();
+
   const posts: Post[] = data?.pages.flatMap((p) => p.items) ?? [];
-
-  // ==============================
-  // HELPER
-  // ==============================
-  const updatePost = (
-    old: InfiniteData<FeedResponse> | undefined,
-    updater: (post: Post) => Post,
-  ): InfiniteData<FeedResponse> | undefined => {
-    if (!old) return old;
-
-    return {
-      ...old,
-      pages: old.pages.map((page) => ({
-        ...page,
-        items: page.items.map(updater),
-      })),
-    };
-  };
-
-  // ==============================
-  // LIKE
-  // ==============================
-  const likeMutation = useMutation({
-    mutationFn: async (postId: string) => {
-      const res = await fetch(`${API_BASE_URL}/like`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ postId }),
-      });
-
-      if (!res.ok) throw new Error("Like failed");
-    },
-
-    onMutate: async (postId) => {
-      await queryClient.cancelQueries({ queryKey: ["forYouFeed"] });
-
-      const previous = queryClient.getQueryData<InfiniteData<FeedResponse>>([
-        "forYouFeed",
-      ]);
-
-      queryClient.setQueryData(["forYouFeed"], (old) =>
-        updatePost(old, (p) =>
-          p.id === postId
-            ? { ...p, isLiked: true, likesCount: p.likesCount + 1 }
-            : p,
-        ),
-      );
-
-      return { previous };
-    },
-
-    onError: (_err, _id, ctx) => {
-      if (ctx?.previous) {
-        queryClient.setQueryData(["forYouFeed"], ctx.previous);
-      }
-    },
-  });
-
-  // ==============================
-  // UNLIKE
-  // ==============================
-  const unlikeMutation = useMutation({
-    mutationFn: async (postId: string) => {
-      const res = await fetch(`${API_BASE_URL}/unlike/${postId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!res.ok) throw new Error("Unlike failed");
-    },
-
-    onMutate: async (postId) => {
-      await queryClient.cancelQueries({ queryKey: ["forYouFeed"] });
-
-      const previous = queryClient.getQueryData<InfiniteData<FeedResponse>>([
-        "forYouFeed",
-      ]);
-
-      queryClient.setQueryData(["forYouFeed"], (old) =>
-        updatePost(old, (p) =>
-          p.id === postId
-            ? {
-                ...p,
-                isLiked: false,
-                likesCount: Math.max(p.likesCount - 1, 0),
-              }
-            : p,
-        ),
-      );
-
-      return { previous };
-    },
-
-    onError: (_err, _id, ctx) => {
-      if (ctx?.previous) {
-        queryClient.setQueryData(["forYouFeed"], ctx.previous);
-      }
-    },
-  });
-
-  // ==============================
-  // BOOKMARK
-  // ==============================
-  const bookmarkMutation = useMutation({
-    mutationFn: async (postId: string) => {
-      const res = await fetch(`${API_BASE_URL}/bookmark`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ postId }),
-      });
-
-      if (!res.ok) throw new Error("Bookmark failed");
-    },
-
-    onMutate: async (postId) => {
-      await queryClient.cancelQueries({ queryKey: ["forYouFeed"] });
-
-      const previous = queryClient.getQueryData<InfiniteData<FeedResponse>>([
-        "forYouFeed",
-      ]);
-
-      queryClient.setQueryData(["forYouFeed"], (old) =>
-        updatePost(old, (p) =>
-          p.id === postId ? { ...p, isBookmarked: true } : p,
-        ),
-      );
-
-      return { previous };
-    },
-
-    onError: (_err, _id, ctx) => {
-      if (ctx?.previous) {
-        queryClient.setQueryData(["forYouFeed"], ctx.previous);
-      }
-    },
-  });
-
-  // ==============================
-  // UNBOOKMARK
-  // ==============================
-  const unbookmarkMutation = useMutation({
-    mutationFn: async (postId: string) => {
-      const res = await fetch(`${API_BASE_URL}/unbookmark/${postId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!res.ok) throw new Error("Unbookmark failed");
-    },
-
-    onMutate: async (postId) => {
-      await queryClient.cancelQueries({ queryKey: ["forYouFeed"] });
-
-      const previous = queryClient.getQueryData<InfiniteData<FeedResponse>>([
-        "forYouFeed",
-      ]);
-
-      queryClient.setQueryData(["forYouFeed"], (old) =>
-        updatePost(old, (p) =>
-          p.id === postId ? { ...p, isBookmarked: false } : p,
-        ),
-      );
-
-      return { previous };
-    },
-
-    onError: (_err, _id, ctx) => {
-      if (ctx?.previous) {
-        queryClient.setQueryData(["forYouFeed"], ctx.previous);
-      }
-    },
-  });
 
   // ==============================
   // RENDER ITEM
@@ -273,7 +39,7 @@ const ForYouFeed = () => {
   const renderItem = useCallback(
     ({ item }: { item: Post }) => {
       return (
-        <View className="px-4 mb-6">
+        <View style={styles.cardContainer}>
           <Pressable
             onPress={() =>
               router.push({
@@ -284,29 +50,30 @@ const ForYouFeed = () => {
           >
             <Image
               source={{ uri: item.imageUrl || "" }}
-              style={{ height: 200, borderRadius: 20 }}
+              style={styles.image}
               contentFit="cover"
             />
           </Pressable>
 
-          <BlurView intensity={40} tint="light" style={{ marginTop: -24 }}>
-            <View className="bg-white/70 rounded-2xl p-4">
-              <Text className="text-blue-500 text-xs font-semibold">
+          <BlurView intensity={40} tint="light" style={styles.blurWrapper}>
+            <View style={styles.card}>
+              <Text style={styles.category}>
                 {item.category?.toUpperCase()}
               </Text>
 
-              <Text className="text-lg font-bold mt-1">{item.title}</Text>
+              <Text style={styles.title}>{item.title}</Text>
 
-              <Text className="text-gray-500 mt-2">
+              <Text style={styles.meta}>
                 {item.sourceName} •{" "}
                 {formatDistanceToNow(new Date(item.createdAt), {
                   addSuffix: true,
                 })}
               </Text>
 
-              <Text className="text-gray-600 mt-2">{item.summary}</Text>
+              <Text style={styles.summary}>{item.summary}</Text>
 
-              <View className="flex-row justify-between mt-4">
+              <View style={styles.actionsRow}>
+                {/* LIKE */}
                 <Pressable
                   onPress={() =>
                     item.isLiked
@@ -314,12 +81,13 @@ const ForYouFeed = () => {
                       : likeMutation.mutate(item.id)
                   }
                 >
-                  <View className="flex-row items-center gap-1">
+                  <View style={styles.actionItem}>
                     <Heart size={18} color={item.isLiked ? "red" : "black"} />
-                    <Text>{item.likesCount}</Text>
+                    <Text style={styles.count}>{item.likesCount}</Text>
                   </View>
                 </Pressable>
 
+                {/* COMMENTS */}
                 <Pressable
                   onPress={() =>
                     router.push({
@@ -328,12 +96,13 @@ const ForYouFeed = () => {
                     })
                   }
                 >
-                  <View className="flex-row items-center gap-1">
+                  <View style={styles.actionItem}>
                     <MessageCircle size={18} />
-                    <Text>{item.commentsCount}</Text>
+                    <Text style={styles.count}>{item.commentsCount}</Text>
                   </View>
                 </Pressable>
 
+                {/* BOOKMARK */}
                 <Pressable
                   onPress={() =>
                     item.isBookmarked
@@ -355,35 +124,155 @@ const ForYouFeed = () => {
     [likeMutation, unlikeMutation, bookmarkMutation, unbookmarkMutation],
   );
 
+  // ==============================
+  // LOADING STATE
+  // ==============================
   if (isLoading) {
-    return <ActivityIndicator style={{ marginTop: 100 }} />;
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ActivityIndicator style={{ marginTop: 100 }} />
+      </SafeAreaView>
+    );
   }
 
+  // ==============================
+  // MAIN UI
+  // ==============================
   return (
-    <View className="flex-1 bg-gray-50 pt-12">
-      <View className="px-4 flex-row justify-between items-center mb-4">
-        <Text className="text-3xl font-bold">For You</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>For You</Text>
 
-        <Pressable onPress={() => router.push("/preferences/profile")}>
-          <Image
-            source={{ uri: "https://i.pravatar.cc/100" }}
-            style={{ width: 40, height: 40, borderRadius: 20 }}
-          />
-        </Pressable>
+          <Pressable onPress={() => router.push("/preferences/profile")}>
+            <Image
+              source={{
+                uri: user?.image ?? "https://via.placeholder.com/150",
+              }}
+              style={styles.avatar}
+            />
+          </Pressable>
+        </View>
+
+        {/* LIST */}
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          ListEmptyComponent={<EmptyHomeFeedState isLoading={isLoading} />}
+          onEndReached={() => {
+            if (hasNextPage) fetchNextPage();
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetchingNextPage ? <ActivityIndicator /> : null
+          }
+          showsVerticalScrollIndicator={false}
+          // ✅ THIS FIXES VERTICAL CENTERING
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: posts.length === 0 ? "center" : "flex-start",
+          }}
+        />
       </View>
-
-      <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        onEndReached={() => {
-          if (hasNextPage) fetchNextPage();
-        }}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={isFetchingNextPage ? <ActivityIndicator /> : null}
-      />
-    </View>
+    </SafeAreaView>
   );
 };
 
 export default ForYouFeed;
+
+// ==============================
+// STYLES
+// ==============================
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F7F7F7",
+  },
+
+  container: {
+    flex: 1,
+  },
+
+  header: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: "700",
+  },
+
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+
+  cardContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+
+  image: {
+    height: 200,
+    borderRadius: 20,
+  },
+
+  blurWrapper: {
+    marginTop: -24,
+  },
+
+  card: {
+    backgroundColor: "rgba(255,255,255,0.75)",
+    borderRadius: 20,
+    padding: 16,
+  },
+
+  category: {
+    color: "#3B82F6",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  title: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginTop: 4,
+  },
+
+  meta: {
+    color: "#6B7280",
+    marginTop: 6,
+    fontSize: 13,
+  },
+
+  summary: {
+    color: "#4B5563",
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
+  actionsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 16,
+    alignItems: "center",
+  },
+
+  actionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  count: {
+    marginLeft: 6,
+  },
+});
