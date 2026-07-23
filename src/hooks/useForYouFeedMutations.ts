@@ -6,16 +6,24 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+type Ctx = {
+  postId: string;
+};
+
+// ==============================
+// HOOK
+// ==============================
 export const useForYouFeedMutations = () => {
   const queryClient = useQueryClient();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
   // ==============================
-  // HELPER
+  // HELPER: update only target post
   // ==============================
   const updatePost = (
     old: InfiniteData<FeedResponse> | undefined,
+    postId: string,
     updater: (post: Post) => Post,
   ): InfiniteData<FeedResponse> | undefined => {
     if (!old) return old;
@@ -24,16 +32,23 @@ export const useForYouFeedMutations = () => {
       ...old,
       pages: old.pages.map((page) => ({
         ...page,
-        items: page.items.map(updater),
+        items: page.items.map((p) => (p.id === postId ? updater(p) : p)),
       })),
     };
   };
 
   // ==============================
+  // COMMON INVALIDATION
+  // ==============================
+  const invalidateFeed = () => {
+    queryClient.invalidateQueries({ queryKey: ["forYouFeed"] });
+  };
+
+  // ==============================
   // LIKE
   // ==============================
-  const likeMutation = useMutation({
-    mutationFn: async (postId: string) => {
+  const likeMutation = useMutation<void, Error, string, Ctx>({
+    mutationFn: async (postId) => {
       const res = await fetch(`${API_BASE_URL}/like`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,35 +62,45 @@ export const useForYouFeedMutations = () => {
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["forYouFeed"] });
 
-      const previous = queryClient.getQueryData<InfiniteData<FeedResponse>>([
-        "forYouFeed",
-      ]);
+      queryClient.setQueryData<InfiniteData<FeedResponse>>(
+        ["forYouFeed"],
+        (old) =>
+          updatePost(old, postId, (p) =>
+            p.isLiked
+              ? p
+              : { ...p, isLiked: true, likesCount: p.likesCount + 1 },
+          ),
+      );
+
+      return { postId };
+    },
+
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
 
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
         ["forYouFeed"],
         (old) =>
-          updatePost(old, (p) =>
-            p.id === postId
-              ? { ...p, isLiked: true, likesCount: p.likesCount + 1 }
+          updatePost(old, ctx.postId, (p) =>
+            p.isLiked
+              ? {
+                  ...p,
+                  isLiked: false,
+                  likesCount: Math.max(p.likesCount - 1, 0),
+                }
               : p,
           ),
       );
-
-      return { previous };
     },
 
-    onError: (_err, _id, ctx) => {
-      if (ctx?.previous) {
-        queryClient.setQueryData(["forYouFeed"], ctx.previous);
-      }
-    },
+    onSettled: invalidateFeed,
   });
 
   // ==============================
   // UNLIKE
   // ==============================
-  const unlikeMutation = useMutation({
-    mutationFn: async (postId: string) => {
+  const unlikeMutation = useMutation<void, Error, string, Ctx>({
+    mutationFn: async (postId) => {
       const res = await fetch(`${API_BASE_URL}/unlike/${postId}`, {
         method: "DELETE",
         credentials: "include",
@@ -87,39 +112,45 @@ export const useForYouFeedMutations = () => {
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["forYouFeed"] });
 
-      const previous = queryClient.getQueryData<InfiniteData<FeedResponse>>([
-        "forYouFeed",
-      ]);
+      queryClient.setQueryData<InfiniteData<FeedResponse>>(
+        ["forYouFeed"],
+        (old) =>
+          updatePost(old, postId, (p) =>
+            !p.isLiked
+              ? p
+              : {
+                  ...p,
+                  isLiked: false,
+                  likesCount: Math.max(p.likesCount - 1, 0),
+                },
+          ),
+      );
+
+      return { postId };
+    },
+
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
 
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
         ["forYouFeed"],
         (old) =>
-          updatePost(old, (p) =>
-            p.id === postId
-              ? {
-                  ...p,
-                  isLiked: false,
-                  likesCount: Math.max(p.likesCount - 1, 0),
-                }
+          updatePost(old, ctx.postId, (p) =>
+            !p.isLiked
+              ? { ...p, isLiked: true, likesCount: p.likesCount + 1 }
               : p,
           ),
       );
-
-      return { previous };
     },
 
-    onError: (_err, _id, ctx) => {
-      if (ctx?.previous) {
-        queryClient.setQueryData(["forYouFeed"], ctx.previous);
-      }
-    },
+    onSettled: invalidateFeed,
   });
 
   // ==============================
   // BOOKMARK
   // ==============================
-  const bookmarkMutation = useMutation({
-    mutationFn: async (postId: string) => {
+  const bookmarkMutation = useMutation<void, Error, string, Ctx>({
+    mutationFn: async (postId) => {
       const res = await fetch(`${API_BASE_URL}/bookmark`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -133,33 +164,37 @@ export const useForYouFeedMutations = () => {
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["forYouFeed"] });
 
-      const previous = queryClient.getQueryData<InfiniteData<FeedResponse>>([
-        "forYouFeed",
-      ]);
+      queryClient.setQueryData<InfiniteData<FeedResponse>>(
+        ["forYouFeed"],
+        (old) =>
+          updatePost(old, postId, (p) =>
+            p.isBookmarked ? p : { ...p, isBookmarked: true },
+          ),
+      );
+
+      return { postId };
+    },
+
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
 
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
         ["forYouFeed"],
         (old) =>
-          updatePost(old, (p) =>
-            p.id === postId ? { ...p, isBookmarked: true } : p,
+          updatePost(old, ctx.postId, (p) =>
+            p.isBookmarked ? { ...p, isBookmarked: false } : p,
           ),
       );
-
-      return { previous };
     },
 
-    onError: (_err, _id, ctx) => {
-      if (ctx?.previous) {
-        queryClient.setQueryData(["forYouFeed"], ctx.previous);
-      }
-    },
+    onSettled: invalidateFeed,
   });
 
   // ==============================
   // UNBOOKMARK
   // ==============================
-  const unbookmarkMutation = useMutation({
-    mutationFn: async (postId: string) => {
+  const unbookmarkMutation = useMutation<void, Error, string, Ctx>({
+    mutationFn: async (postId) => {
       const res = await fetch(`${API_BASE_URL}/unbookmark/${postId}`, {
         method: "DELETE",
         credentials: "include",
@@ -171,26 +206,30 @@ export const useForYouFeedMutations = () => {
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["forYouFeed"] });
 
-      const previous = queryClient.getQueryData<InfiniteData<FeedResponse>>([
-        "forYouFeed",
-      ]);
+      queryClient.setQueryData<InfiniteData<FeedResponse>>(
+        ["forYouFeed"],
+        (old) =>
+          updatePost(old, postId, (p) =>
+            !p.isBookmarked ? p : { ...p, isBookmarked: false },
+          ),
+      );
+
+      return { postId };
+    },
+
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
 
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
         ["forYouFeed"],
         (old) =>
-          updatePost(old, (p) =>
-            p.id === postId ? { ...p, isBookmarked: false } : p,
+          updatePost(old, ctx.postId, (p) =>
+            !p.isBookmarked ? { ...p, isBookmarked: true } : p,
           ),
       );
-
-      return { previous };
     },
 
-    onError: (_err, _id, ctx) => {
-      if (ctx?.previous) {
-        queryClient.setQueryData(["forYouFeed"], ctx.previous);
-      }
-    },
+    onSettled: invalidateFeed,
   });
 
   return {

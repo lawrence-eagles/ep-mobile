@@ -23,7 +23,7 @@ export const useForYouFeedInfiniteScroll = () => {
       const cursor = pageParam;
 
       const url = cursor
-        ? `${API_BASE_URL}/feed?cursor=${cursor}`
+        ? `${API_BASE_URL}/feed?cursor=${encodeURIComponent(cursor)}`
         : `${API_BASE_URL}/feed`;
 
       const res = await fetch(url, { credentials: "include" });

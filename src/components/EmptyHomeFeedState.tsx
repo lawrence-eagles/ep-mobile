@@ -25,10 +25,10 @@ const EmptyHomeFeedState = ({ isLoading }: EmptyUIProps) => {
           <Text style={styles.emptyButtonText}>Update Preferences</Text>
         </Pressable>
         <Pressable
-          onPress={() => router.push("/preferences/profile")}
+          onPress={() => router.push("/explore")}
           style={styles.emptyButton}
         >
-          <Text style={styles.emptyButtonText}>Go To Explore</Text>
+          <Text style={styles.emptyExploreButton}>Go To Explore</Text>
         </Pressable>
       </View>
     </View>
@@ -71,6 +71,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: "#000",
+    borderRadius: 999,
+  },
+  emptyExploreButton: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: "#2563eb",
     borderRadius: 999,
   },
 

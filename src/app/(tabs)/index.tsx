@@ -1,8 +1,10 @@
 import EmptyHomeFeedState from "@/components/EmptyHomeFeedState";
+import ErrorScreen from "@/components/Error";
 import { useAuth } from "@/hooks/useAuth";
 import { useForYouFeedInfiniteScroll } from "@/hooks/useForYouFeedInfiniteScroll";
 import { useForYouFeedMutations } from "@/hooks/useForYouFeedMutations";
 import { Post } from "@/types";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { formatDistanceToNow } from "date-fns";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
@@ -19,12 +21,44 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const tabBarHeight = useBottomTabBarHeight();
+
+// ==============================
+// ERROR STATE COMPONENT
+// ==============================
+// const ErrorState = ({
+//   message,
+//   onRetry,
+// }: {
+//   message: string;
+//   onRetry: () => void;
+// }) => {
+//   return (
+//     <View style={styles.center}>
+//       <Text style={styles.errorTitle}>Something went wrong</Text>
+//       <Text style={styles.errorMessage}>{message}</Text>
+
+//       <Pressable style={styles.retryButton} onPress={onRetry}>
+//         <Text style={styles.retryText}>Retry</Text>
+//       </Pressable>
+//     </View>
+//   );
+// };
+
 // ==============================
 // COMPONENT
 // ==============================
 const ForYouFeed = () => {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useForYouFeedInfiniteScroll();
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useForYouFeedInfiniteScroll();
 
   const { bookmarkMutation, unbookmarkMutation, likeMutation, unlikeMutation } =
     useForYouFeedMutations();
@@ -130,7 +164,30 @@ const ForYouFeed = () => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <ActivityIndicator style={{ marginTop: 100 }} />
+        {/* <ActivityIndicator style={{ marginTop: 100 }} /> */}
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <ActivityIndicator />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ==============================
+  // ERROR STATE (✅ FIX)
+  // ==============================
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ErrorScreen
+          message={error?.message ?? "Failed to load feed"}
+          onRetry={refetch}
+        />
       </SafeAreaView>
     );
   }
@@ -160,7 +217,7 @@ const ForYouFeed = () => {
           data={posts}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          ListEmptyComponent={<EmptyHomeFeedState isLoading={isLoading} />}
+          ListEmptyComponent={<EmptyHomeFeedState isLoading={false} />}
           onEndReached={() => {
             if (hasNextPage) fetchNextPage();
           }}
@@ -169,10 +226,10 @@ const ForYouFeed = () => {
             isFetchingNextPage ? <ActivityIndicator /> : null
           }
           showsVerticalScrollIndicator={false}
-          // ✅ THIS FIXES VERTICAL CENTERING
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: posts.length === 0 ? "center" : "flex-start",
+            paddingBottom: tabBarHeight + 16, // ✅ THIS FIXES OVERLAP
           }}
         />
       </View>
@@ -274,5 +331,40 @@ const styles = StyleSheet.create({
 
   count: {
     marginLeft: 6,
+  },
+
+  // ==============================
+  // ERROR STYLES
+  // ==============================
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+
+  errorMessage: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+
+  retryButton: {
+    backgroundColor: "#111",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+
+  retryText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });

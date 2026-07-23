@@ -50,6 +50,26 @@ follow up run
 
 `ip a` -- to get pc ip address
 
+# To reserve space for the absolute tab bar in tab content.
+
+Add this to feed:
+
+```js
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+
+const tabBarHeight = useBottomTabBarHeight();
+```
+
+Then update FlatList:
+
+```js
+contentContainerStyle={{
+  paddingBottom: tabBarHeight + 16, // ✅ THIS FIXES OVERLAP
+  flexGrow: 1,
+  justifyContent: posts.length === 0 ? "center" : "flex-start",
+}}
+```
+
 <!--
 # MAKE SURE TO USE THE SAME CONSISTENT SKY BLUE
 
@@ -124,5 +144,6 @@ NOTE ALL THESE CREDENTIAL INCLUDE NEED TO BE SOLVED THE BETTER AUTH WAY
 NOTE THAT SHARE APP FEATURE THAT REQUIRES A ROUTE TO BE CALLED FOR ATTRIBUTION.
 NOTE UPDATE ROUTES IN ALL FETCH HOOKS
 NOTE ALLOW USERS TO UPLOAD PROFILE IMAGE
+NOTE IMPLEMENT THE LOADING PAGE LIKE THE ERROR PAGE AND USE IT.
 
  -->
