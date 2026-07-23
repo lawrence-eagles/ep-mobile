@@ -26,9 +26,9 @@ const EmptyHomeFeedState = ({ isLoading }: EmptyUIProps) => {
         </Pressable>
         <Pressable
           onPress={() => router.push("/explore")}
-          style={styles.emptyButton}
+          style={[styles.emptyButton, styles.emptyExploreButton]}
         >
-          <Text style={styles.emptyExploreButton}>Go To Explore</Text>
+          <Text style={styles.emptyButtonText}>Go To Explore</Text>
         </Pressable>
       </View>
     </View>
@@ -74,11 +74,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   emptyExploreButton: {
-    marginTop: 24,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
     backgroundColor: "#2563eb",
-    borderRadius: 999,
   },
 
   emptyButtonText: {

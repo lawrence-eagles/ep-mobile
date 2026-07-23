@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useForYouFeedInfiniteScroll } from "@/hooks/useForYouFeedInfiniteScroll";
 import { useForYouFeedMutations } from "@/hooks/useForYouFeedMutations";
 import { Post } from "@/types";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { formatDistanceToNow } from "date-fns";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
@@ -19,36 +18,17 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-
-const tabBarHeight = useBottomTabBarHeight();
-
-// ==============================
-// ERROR STATE COMPONENT
-// ==============================
-// const ErrorState = ({
-//   message,
-//   onRetry,
-// }: {
-//   message: string;
-//   onRetry: () => void;
-// }) => {
-//   return (
-//     <View style={styles.center}>
-//       <Text style={styles.errorTitle}>Something went wrong</Text>
-//       <Text style={styles.errorMessage}>{message}</Text>
-
-//       <Pressable style={styles.retryButton} onPress={onRetry}>
-//         <Text style={styles.retryText}>Retry</Text>
-//       </Pressable>
-//     </View>
-//   );
-// };
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 // ==============================
 // COMPONENT
 // ==============================
 const ForYouFeed = () => {
+  const insets = useSafeAreaInsets();
+
   const {
     data,
     fetchNextPage,
@@ -163,15 +143,8 @@ const ForYouFeed = () => {
   // ==============================
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        {/* <ActivityIndicator style={{ marginTop: 100 }} /> */}
-        <View
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <View style={styles.center}>
           <ActivityIndicator />
         </View>
       </SafeAreaView>
@@ -179,11 +152,11 @@ const ForYouFeed = () => {
   }
 
   // ==============================
-  // ERROR STATE (✅ FIX)
+  // ERROR STATE
   // ==============================
   if (isError) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
         <ErrorScreen
           message={error?.message ?? "Failed to load feed"}
           onRetry={refetch}
@@ -196,7 +169,7 @@ const ForYouFeed = () => {
   // MAIN UI
   // ==============================
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <View style={styles.container}>
         {/* HEADER */}
         <View style={styles.header}>
@@ -229,7 +202,7 @@ const ForYouFeed = () => {
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: posts.length === 0 ? "center" : "flex-start",
-            paddingBottom: tabBarHeight + 16, // ✅ THIS FIXES OVERLAP
+            paddingBottom: insets.bottom + 80,
           }}
         />
       </View>
@@ -333,38 +306,9 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 
-  // ==============================
-  // ERROR STYLES
-  // ==============================
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 24,
-  },
-
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-
-  errorMessage: {
-    fontSize: 14,
-    color: "#6B7280",
-    textAlign: "center",
-    marginBottom: 16,
-  },
-
-  retryButton: {
-    backgroundColor: "#111",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-
-  retryText: {
-    color: "#fff",
-    fontWeight: "600",
   },
 });

@@ -1,14 +1,16 @@
 import ProtectedLayout from "@/components/ProtectedLayout";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// ✅ Shared constant (used in screens if needed)
-export const TAB_BAR_HEIGHT = 110;
+// ✅ Shared constant
+export const TAB_BAR_HEIGHT = 70;
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+
+  // ✅ FIX: apply safe-area on ALL platforms
+  const bottomInset = Math.max(insets.bottom, 10);
 
   return (
     <ProtectedLayout>
@@ -24,18 +26,17 @@ export default function TabsLayout() {
           tabBarStyle: {
             position: "absolute",
 
-            // ✅ FIX: dynamic height with safe area
-            height:
-              TAB_BAR_HEIGHT + (Platform.OS === "ios" ? insets.bottom : 0),
+            // ✅ FIX: include safe area on all platforms
+            height: TAB_BAR_HEIGHT + bottomInset,
 
             paddingTop: 8,
-            paddingBottom: Platform.OS === "ios" ? insets.bottom : 10,
+            paddingBottom: bottomInset,
 
             borderTopWidth: 0,
             elevation: 0,
             backgroundColor: "#FFFFFF",
 
-            // shadow
+            // subtle shadow
             shadowColor: "#000",
             shadowOffset: { width: 0, height: -2 },
             shadowOpacity: 0.05,
