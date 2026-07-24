@@ -34,6 +34,7 @@ const ForYouFeed = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isFetchNextPageError,
     isLoading,
     isError,
     error,
@@ -47,11 +48,18 @@ const ForYouFeed = () => {
 
   const posts: Post[] = data?.pages.flatMap((p) => p.items) ?? [];
 
+  const isInitialError = isError && posts.length === 0;
+
   // ==============================
   // RENDER ITEM
   // ==============================
   const renderItem = useCallback(
     ({ item }: { item: Post }) => {
+      const isLiking = likeMutation.isPending || unlikeMutation.isPending;
+
+      const isBookmarking =
+        bookmarkMutation.isPending || unbookmarkMutation.isPending;
+
       return (
         <View style={styles.cardContainer}>
           <Pressable
@@ -89,11 +97,23 @@ const ForYouFeed = () => {
               <View style={styles.actionsRow}>
                 {/* LIKE */}
                 <Pressable
-                  onPress={() =>
+                  disabled={isLiking}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    item.isLiked ? "Unlike post" : "Like post"
+                  }
+                  accessibilityState={{
+                    disabled: isLiking,
+                    selected: item.isLiked,
+                  }}
+                  hitSlop={10}
+                  onPress={() => {
+                    if (isLiking) return;
+
                     item.isLiked
                       ? unlikeMutation.mutate(item.id)
-                      : likeMutation.mutate(item.id)
-                  }
+                      : likeMutation.mutate(item.id);
+                  }}
                 >
                   <View style={styles.actionItem}>
                     <Heart size={18} color={item.isLiked ? "red" : "black"} />
@@ -103,6 +123,9 @@ const ForYouFeed = () => {
 
                 {/* COMMENTS */}
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="View comments"
+                  hitSlop={10}
                   onPress={() =>
                     router.push({
                       pathname: "/post/[slug]",
@@ -118,11 +141,23 @@ const ForYouFeed = () => {
 
                 {/* BOOKMARK */}
                 <Pressable
-                  onPress={() =>
+                  disabled={isBookmarking}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    item.isBookmarked ? "Remove bookmark" : "Bookmark post"
+                  }
+                  accessibilityState={{
+                    disabled: isBookmarking,
+                    selected: item.isBookmarked,
+                  }}
+                  hitSlop={10}
+                  onPress={() => {
+                    if (isBookmarking) return;
+
                     item.isBookmarked
                       ? unbookmarkMutation.mutate(item.id)
-                      : bookmarkMutation.mutate(item.id)
-                  }
+                      : bookmarkMutation.mutate(item.id);
+                  }}
                 >
                   <Bookmark
                     size={18}
@@ -152,9 +187,9 @@ const ForYouFeed = () => {
   }
 
   // ==============================
-  // ERROR STATE
+  // ERROR STATE (ONLY IF NO DATA)
   // ==============================
-  if (isError) {
+  if (isInitialError) {
     return (
       <SafeAreaView style={styles.safeArea} edges={["top"]}>
         <ErrorScreen
@@ -175,7 +210,12 @@ const ForYouFeed = () => {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>For You</Text>
 
-          <Pressable onPress={() => router.push("/preferences/profile")}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open profile"
+            hitSlop={10}
+            onPress={() => router.push("/preferences/profile")}
+          >
             <Image
               source={{
                 uri: user?.image ?? "https://via.placeholder.com/150",
@@ -192,12 +232,34 @@ const ForYouFeed = () => {
           renderItem={renderItem}
           ListEmptyComponent={<EmptyHomeFeedState isLoading={false} />}
           onEndReached={() => {
-            if (hasNextPage) fetchNextPage();
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
           }}
           onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            isFetchingNextPage ? <ActivityIndicator /> : null
-          }
+          ListFooterComponent={() => {
+            if (isFetchingNextPage) {
+              return <ActivityIndicator style={{ marginVertical: 16 }} />;
+            }
+
+            if (isFetchNextPageError) {
+              return (
+                <View style={styles.footerError}>
+                  <Text style={styles.footerErrorText}>
+                    Failed to load more posts
+                  </Text>
+                  <Pressable
+                    onPress={() => fetchNextPage()}
+                    style={styles.retryButton}
+                  >
+                    <Text style={styles.retryText}>Retry</Text>
+                  </Pressable>
+                </View>
+              );
+            }
+
+            return null;
+          }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             flexGrow: 1,
@@ -310,5 +372,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+
+  footerError: {
+    alignItems: "center",
+    marginVertical: 16,
+  },
+
+  footerErrorText: {
+    color: "#6B7280",
+    marginBottom: 8,
+  },
+
+  retryButton: {
+    backgroundColor: "#111",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+
+  retryText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });
