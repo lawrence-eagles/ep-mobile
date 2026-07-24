@@ -2,12 +2,14 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-const ErrorScreen = () => {
+const ErrorScreen = ({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) => {
   const router = useRouter();
-
-  const handleRetry = () => {
-    router.replace("/(tabs)"); // 🔁 Adjust if you want a specific retry route
-  };
 
   const handleGoBack = () => {
     if (router.canGoBack()) {
@@ -31,7 +33,7 @@ const ErrorScreen = () => {
 
       {/* Subtitle */}
       <Text style={styles.subtitle}>
-        An error occured while processing your request.
+        {message}
         {"\n"}
         Please check your internet connection and
         {"\n"}
@@ -39,7 +41,7 @@ const ErrorScreen = () => {
       </Text>
 
       {/* Primary Button */}
-      <Pressable style={styles.primaryButton} onPress={handleRetry}>
+      <Pressable style={styles.primaryButton} onPress={onRetry}>
         <Text style={styles.primaryButtonText}>Try Again</Text>
       </Pressable>
 
