@@ -10,7 +10,7 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { Bookmark, Heart, MessageCircle } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -31,18 +31,34 @@ import {
 const Explore = () => {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { categories = [] } = useCategories();
+
+  // ✅ include loading state
+  const { categories = [], isLoading: isCategoriesLoading } = useCategories();
+
   const { useToggleMutation } = useExploreMutations();
 
-  // ✅ stable default
+  // ==============================
+  // DEFAULT CATEGORY
+  // ==============================
   const defaultCategory = useMemo(
     () => categories.find((c) => c.name === "General") ?? categories[0],
     [categories],
   );
 
   const [activeCategoryId, setActiveCategoryId] = useState<string | undefined>(
-    defaultCategory?.id,
+    undefined,
   );
+
+  // ✅ set only after categories load
+  useEffect(() => {
+    if (!activeCategoryId && defaultCategory?.id) {
+      setActiveCategoryId(defaultCategory.id);
+    }
+  }, [defaultCategory, activeCategoryId]);
+
+  // ==============================
+  // FEED
+  // ==============================
   const {
     data,
     fetchNextPage,
@@ -68,8 +84,12 @@ const Explore = () => {
   // ==============================
   const renderItem = useCallback(
     ({ item }: { item: Post }) => {
-      const likePending = likeMutation.isPending;
-      const bookmarkPending = bookmarkMutation.isPending;
+      const likePending =
+        likeMutation.isPending && likeMutation.variables?.postId === item.id;
+
+      const bookmarkPending =
+        bookmarkMutation.isPending &&
+        bookmarkMutation.variables?.postId === item.id;
 
       return (
         <View style={styles.cardContainer}>
@@ -106,15 +126,6 @@ const Explore = () => {
                 {/* LIKE */}
                 <Pressable
                   disabled={likePending}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    item.isLiked ? "Unlike post" : "Like post"
-                  }
-                  accessibilityState={{
-                    disabled: likePending,
-                    selected: item.isLiked,
-                  }}
-                  hitSlop={10}
                   onPress={() =>
                     likeMutation.mutate({
                       postId: item.id,
@@ -130,9 +141,6 @@ const Explore = () => {
 
                 {/* COMMENTS */}
                 <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Open post"
-                  hitSlop={10}
                   onPress={() =>
                     router.push({
                       pathname: "/post/[slug]",
@@ -149,15 +157,6 @@ const Explore = () => {
                 {/* BOOKMARK */}
                 <Pressable
                   disabled={bookmarkPending}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    item.isBookmarked ? "Remove bookmark" : "Bookmark post"
-                  }
-                  accessibilityState={{
-                    disabled: bookmarkPending,
-                    selected: item.isBookmarked,
-                  }}
-                  hitSlop={10}
                   onPress={() =>
                     bookmarkMutation.mutate({
                       postId: item.id,
@@ -180,34 +179,70 @@ const Explore = () => {
   );
 
   // ==============================
-  // LOADING
+  // BODY CONTENT (KEY FIX)
   // ==============================
-  if (isLoading) {
-    return (
-      <SafeAreaView edges={["top"]} style={styles.safeArea}>
+  const renderContent = () => {
+    // ✅ categories still loading
+    if (isCategoriesLoading || !activeCategoryId) {
+      return (
         <View style={styles.center}>
           <ActivityIndicator />
         </View>
-      </SafeAreaView>
-    );
-  }
+      );
+    }
 
-  // ==============================
-  // ERROR (ONLY INITIAL)
-  // ==============================
-  if (isError && posts.length === 0) {
-    return (
-      <SafeAreaView edges={["top"]} style={styles.safeArea}>
+    // ✅ initial load for this category
+    if (isLoading && posts.length === 0) {
+      return (
+        <View style={styles.center}>
+          <ActivityIndicator />
+        </View>
+      );
+    }
+
+    // ✅ error (but keep UI intact)
+    if (isError && posts.length === 0) {
+      return (
         <ErrorScreen
           message={error?.message ?? "Failed to load"}
           onRetry={refetch}
         />
-      </SafeAreaView>
+      );
+    }
+
+    // ✅ main list
+    return (
+      <FlatList
+        data={posts}
+        keyExtractor={(i) => i.id}
+        renderItem={renderItem}
+        ListEmptyComponent={<EmptyHomeFeedState isLoading={false} />}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+        }}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={() => {
+          if (isFetchingNextPage) return <ActivityIndicator />;
+
+          if (isFetchNextPageError)
+            return (
+              <Pressable onPress={() => fetchNextPage()}>
+                <Text style={styles.retry}>Retry loading more</Text>
+              </Pressable>
+            );
+
+          return null;
+        }}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 100,
+          flexGrow: 1,
+        }}
+      />
     );
-  }
+  };
 
   // ==============================
-  // UI
+  // UI (ALWAYS RENDERED)
   // ==============================
   return (
     <SafeAreaView edges={["top"]} style={styles.safeArea}>
@@ -232,50 +267,31 @@ const Explore = () => {
           showsHorizontalScrollIndicator={false}
           style={styles.tabs}
         >
-          {categories.map((cat) => {
-            const active = cat.id === activeCategoryId;
+          {isCategoriesLoading
+            ? Array.from({ length: 5 }).map((_, i) => (
+                <View key={i} style={styles.tab} />
+              ))
+            : categories.map((cat) => {
+                const active = cat.id === activeCategoryId;
 
-            return (
-              <Pressable
-                key={cat.id}
-                onPress={() => setActiveCategoryId(cat.id)}
-                style={[styles.tab, active && styles.tabActive]}
-              >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                  {cat.name}
-                </Text>
-              </Pressable>
-            );
-          })}
+                return (
+                  <Pressable
+                    key={cat.id}
+                    onPress={() => setActiveCategoryId(cat.id)}
+                    style={[styles.tab, active && styles.tabActive]}
+                  >
+                    <Text
+                      style={[styles.tabText, active && styles.tabTextActive]}
+                    >
+                      {cat.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
         </ScrollView>
 
-        {/* LIST */}
-        <FlatList
-          data={posts}
-          keyExtractor={(i) => i.id}
-          renderItem={renderItem}
-          ListEmptyComponent={<EmptyHomeFeedState isLoading={false} />}
-          onEndReached={() => {
-            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-          }}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={() => {
-            if (isFetchingNextPage) return <ActivityIndicator />;
-
-            if (isFetchNextPageError)
-              return (
-                <Pressable onPress={() => fetchNextPage()}>
-                  <Text style={styles.retry}>Retry loading more</Text>
-                </Pressable>
-              );
-
-            return null;
-          }}
-          contentContainerStyle={{
-            paddingBottom: insets.bottom + 100,
-            flexGrow: 1,
-          }}
-        />
+        {/* CONTENT */}
+        <View style={{ flex: 1 }}>{renderContent()}</View>
       </View>
     </SafeAreaView>
   );
@@ -284,7 +300,7 @@ const Explore = () => {
 export default Explore;
 
 // ==============================
-// STYLES
+// STYLES (UNCHANGED)
 // ==============================
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F7F7F7" },
