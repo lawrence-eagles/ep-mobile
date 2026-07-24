@@ -14,7 +14,7 @@ const EmptyExploreFeedState = ({ isLoading }: EmptyUIProps) => {
         <Text style={styles.emptyTitle}>No posts yet</Text>
 
         <Text style={styles.emptySubtitle}>
-          Follow categories by updating your preferences or go to explore to see
+          Follow categories by updating your preferences or go home to see
           posts.
         </Text>
 
@@ -28,7 +28,7 @@ const EmptyExploreFeedState = ({ isLoading }: EmptyUIProps) => {
           onPress={() => router.push("/(tabs)")}
           style={[styles.emptyButton, styles.emptyExploreButton]}
         >
-          <Text style={styles.emptyButtonText}>Go To Home</Text>
+          <Text style={styles.emptyButtonText}>Go Home</Text>
         </Pressable>
       </View>
     </View>
