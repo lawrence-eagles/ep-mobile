@@ -1,4 +1,4 @@
-import EmptyHomeFeedState from "@/components/EmptyHomeFeedState";
+import EmptyExploreFeedState from "@/components/EmptyExploreFeedState";
 import ErrorScreen from "@/components/Error";
 import { useAuth } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
@@ -216,7 +216,7 @@ const Explore = () => {
         data={posts}
         keyExtractor={(i) => i.id}
         renderItem={renderItem}
-        ListEmptyComponent={<EmptyHomeFeedState isLoading={false} />}
+        ListEmptyComponent={<EmptyExploreFeedState isLoading={false} />}
         onEndReached={() => {
           if (hasNextPage && !isFetchingNextPage) fetchNextPage();
         }}
