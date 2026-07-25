@@ -20,11 +20,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-/**
- * =========================
- * COMPONENT
- * =========================
- */
 export default function Trending() {
   const {
     data,
@@ -35,7 +30,9 @@ export default function Trending() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isFetchNextPageError, // ✅ NEW
   } = useTrendingInfiniteScroll();
+
   const { bookmarkMutation, likeMutation } = useTrendingMutations();
   const { user } = useAuth();
 
@@ -80,6 +77,8 @@ export default function Trending() {
    * STATES
    * =========================
    */
+
+  // ✅ ONLY show full error if no posts exist
   if (isLoading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
@@ -88,21 +87,18 @@ export default function Trending() {
     );
   }
 
-  if (isError) {
+  if (isError && posts.length === 0) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
         <Text style={styles.errorText}>Something went wrong</Text>
-        <Pressable onPress={() => refetch()} style={styles.retryBtn}>
+        <Pressable
+          onPress={() => refetch()}
+          style={styles.retryBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading trending posts"
+        >
           <Text style={styles.retryText}>Retry</Text>
         </Pressable>
-      </SafeAreaView>
-    );
-  }
-
-  if (!posts.length) {
-    return (
-      <SafeAreaView style={styles.center} edges={["top"]}>
-        <Text>No trending posts yet</Text>
       </SafeAreaView>
     );
   }
@@ -160,7 +156,15 @@ export default function Trending() {
         </Text>
 
         <View style={styles.actions}>
-          <Pressable onPress={() => handleLike(item)} style={styles.action}>
+          {/* LIKE */}
+          <Pressable
+            onPress={() => handleLike(item)}
+            style={styles.action}
+            accessibilityRole="button"
+            accessibilityLabel={item.isLiked ? "Unlike post" : "Like post"}
+            accessibilityState={{ selected: item.isLiked }}
+            hitSlop={10}
+          >
             <Heart
               size={20}
               color={item.isLiked ? "red" : "black"}
@@ -169,6 +173,7 @@ export default function Trending() {
             <Text>{item.likesCount}</Text>
           </Pressable>
 
+          {/* COMMENTS */}
           <Pressable
             onPress={() =>
               router.push({
@@ -177,18 +182,59 @@ export default function Trending() {
               })
             }
             style={styles.action}
+            accessibilityRole="button"
+            accessibilityLabel="View comments"
+            hitSlop={10}
           >
             <MessageCircle size={20} />
             <Text>{item.commentsCount}</Text>
           </Pressable>
 
-          <Pressable onPress={() => handleBookmark(item)}>
+          {/* BOOKMARK */}
+          <Pressable
+            onPress={() => handleBookmark(item)}
+            accessibilityRole="button"
+            accessibilityLabel={
+              item.isBookmarked ? "Remove bookmark" : "Bookmark post"
+            }
+            accessibilityState={{ selected: item.isBookmarked }}
+            hitSlop={10}
+          >
             <Bookmark size={20} fill={item.isBookmarked ? "black" : "none"} />
           </Pressable>
         </View>
       </View>
     </View>
   );
+
+  /**
+   * =========================
+   * FOOTER (Pagination Error Fix)
+   * =========================
+   */
+  const ListFooter = () => {
+    if (isFetchingNextPage) {
+      return <ActivityIndicator style={{ marginVertical: 20 }} />;
+    }
+
+    if (isFetchNextPageError) {
+      return (
+        <View style={{ alignItems: "center", marginVertical: 20 }}>
+          <Text style={styles.errorText}>Failed to load more posts</Text>
+          <Pressable
+            onPress={() => fetchNextPage()}
+            style={styles.retryBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading more posts"
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    return null;
+  };
 
   /**
    * =========================
@@ -200,7 +246,11 @@ export default function Trending() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Trending</Text>
 
-        <Pressable onPress={() => router.push("/preferences/profile")}>
+        <Pressable
+          onPress={() => router.push("/preferences/profile")}
+          accessibilityRole="button"
+          accessibilityLabel="Open profile"
+        >
           <Image
             source={{ uri: user?.image ?? "https://i.pravatar.cc/100" }}
             style={styles.avatar}
@@ -216,13 +266,12 @@ export default function Trending() {
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => refetch()} // ✅ FIXED
+          />
         }
-        ListFooterComponent={
-          isFetchingNextPage ? (
-            <ActivityIndicator style={{ marginVertical: 20 }} />
-          ) : null
-        }
+        ListFooterComponent={<ListFooter />}
       />
     </SafeAreaView>
   );
@@ -230,7 +279,7 @@ export default function Trending() {
 
 /**
  * =========================
- * STYLES
+ * STYLES (UNCHANGED)
  * =========================
  */
 const styles = StyleSheet.create({
@@ -265,7 +314,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   blur: {
-    ...StyleSheet.absoluteFill, // ✅ FIXED
+    ...StyleSheet.absoluteFill,
   },
   image: {
     width: "100%",

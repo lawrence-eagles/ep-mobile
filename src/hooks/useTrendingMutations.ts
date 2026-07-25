@@ -11,44 +11,65 @@ export const useTrendingMutations = () => {
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
+  /**
+   * =========================
+   * HELPERS
+   * =========================
+   */
+  const handleResponse = async (res: Response) => {
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || `Request failed: ${res.status}`);
+    }
+    return res;
+  };
+
   async function likePost(postId: string) {
-    await fetch(`${API_BASE_URL}/like`, {
+    const res = await fetch(`${API_BASE_URL}/like`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ postId }),
     });
+
+    return handleResponse(res);
   }
 
   async function unlikePost(postId: string) {
-    await fetch(`${API_BASE_URL}/unlike/${postId}`, {
+    const res = await fetch(`${API_BASE_URL}/unlike/${postId}`, {
       method: "DELETE",
       credentials: "include",
     });
+
+    return handleResponse(res);
   }
 
   async function bookmarkPost(postId: string) {
-    await fetch(`${API_BASE_URL}/bookmark`, {
+    const res = await fetch(`${API_BASE_URL}/bookmark`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ postId }),
     });
+
+    return handleResponse(res);
   }
 
   async function unbookmarkPost(postId: string) {
-    await fetch(`${API_BASE_URL}/bookmark/${postId}`, {
+    const res = await fetch(`${API_BASE_URL}/bookmark/${postId}`, {
       method: "DELETE",
       credentials: "include",
     });
+
+    return handleResponse(res);
   }
 
   /**
    * =========================
-   * MUTATIONS (OPTIMISTIC)
+   * CACHE UPDATE (TARGETED)
    * =========================
    */
-  const updateCache = (postId: string, updater: (p: Post) => Post) => {
+  const updatePost = (postId: string, updater: (p: Post) => Post) => {
     queryClient.setQueryData<InfiniteData<FeedResponse>>(
       ["trending-feed"],
       (old) => {
@@ -65,6 +86,11 @@ export const useTrendingMutations = () => {
     );
   };
 
+  /**
+   * =========================
+   * LIKE MUTATION
+   * =========================
+   */
   const likeMutation = useMutation({
     mutationFn: async ({
       postId,
@@ -75,31 +101,51 @@ export const useTrendingMutations = () => {
     }) => {
       return isLiked ? unlikePost(postId) : likePost(postId);
     },
+
     onMutate: async ({ postId, isLiked }) => {
       await queryClient.cancelQueries({ queryKey: ["trending-feed"] });
 
-      const prev = queryClient.getQueryData<InfiniteData<FeedResponse>>([
+      // Store only the affected post state
+      let previousPost: Post | undefined;
+
+      const data = queryClient.getQueryData<InfiniteData<FeedResponse>>([
         "trending-feed",
       ]);
 
-      updateCache(postId, (p) => ({
+      data?.pages.forEach((page) => {
+        page.items.forEach((p) => {
+          if (p.id === postId) {
+            previousPost = p;
+          }
+        });
+      });
+
+      // Optimistic update
+      updatePost(postId, (p) => ({
         ...p,
         isLiked: !isLiked,
         likesCount: p.likesCount + (isLiked ? -1 : 1),
       }));
 
-      return { prev };
+      return { previousPost, postId };
     },
+
     onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) {
-        queryClient.setQueryData(["trending-feed"], ctx.prev);
+      if (ctx?.previousPost) {
+        updatePost(ctx.postId, () => ctx.previousPost!);
       }
     },
+
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["trending-feed"] });
     },
   });
 
+  /**
+   * =========================
+   * BOOKMARK MUTATION
+   * =========================
+   */
   const bookmarkMutation = useMutation({
     mutationFn: async ({
       postId,
@@ -110,25 +156,39 @@ export const useTrendingMutations = () => {
     }) => {
       return isBookmarked ? unbookmarkPost(postId) : bookmarkPost(postId);
     },
+
     onMutate: async ({ postId, isBookmarked }) => {
       await queryClient.cancelQueries({ queryKey: ["trending-feed"] });
 
-      const prev = queryClient.getQueryData<InfiniteData<FeedResponse>>([
+      let previousPost: Post | undefined;
+
+      const data = queryClient.getQueryData<InfiniteData<FeedResponse>>([
         "trending-feed",
       ]);
 
-      updateCache(postId, (p) => ({
+      data?.pages.forEach((page) => {
+        page.items.forEach((p) => {
+          if (p.id === postId) {
+            previousPost = p;
+          }
+        });
+      });
+
+      // Optimistic update
+      updatePost(postId, (p) => ({
         ...p,
         isBookmarked: !isBookmarked,
       }));
 
-      return { prev };
+      return { previousPost, postId };
     },
+
     onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) {
-        queryClient.setQueryData(["trending-feed"], ctx.prev);
+      if (ctx?.previousPost) {
+        updatePost(ctx.postId, () => ctx.previousPost!);
       }
     },
+
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["trending-feed"] });
     },
