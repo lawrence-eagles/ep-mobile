@@ -75,8 +75,8 @@ contentContainerStyle={{
 
 1. delete user account
 2. logout user
-3. create error screen
-4. create loading screen
+3. create error screen ✅
+4. create loading screen ✅
 5. create splash screen
 
 
