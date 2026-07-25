@@ -2,7 +2,7 @@ import { EmptyUIProps } from "@/types";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-const EmptyExploreFeedState = ({ isLoading }: EmptyUIProps) => {
+const EmptyTrendingFeedState = ({ isLoading }: EmptyUIProps) => {
   if (isLoading) return null;
 
   return (
@@ -11,7 +11,7 @@ const EmptyExploreFeedState = ({ isLoading }: EmptyUIProps) => {
         <Text style={styles.emptyTitle}>No posts yet</Text>
 
         <Text style={styles.emptySubtitle}>
-          Follow categories by updating your preferences or go home to see
+          Follow categories by updating your preferences or go to explore to see
           posts.
         </Text>
 
@@ -22,17 +22,17 @@ const EmptyExploreFeedState = ({ isLoading }: EmptyUIProps) => {
           <Text style={styles.emptyButtonText}>Update Preferences</Text>
         </Pressable>
         <Pressable
-          onPress={() => router.push("/(tabs)")}
+          onPress={() => router.push("/explore")}
           style={[styles.emptyButton, styles.emptyExploreButton]}
         >
-          <Text style={styles.emptyButtonText}>Go Home</Text>
+          <Text style={styles.emptyButtonText}>Explore</Text>
         </Pressable>
       </View>
     </View>
   );
 };
 
-export default EmptyExploreFeedState;
+export default EmptyTrendingFeedState;
 
 // ==============================
 // STYLES
