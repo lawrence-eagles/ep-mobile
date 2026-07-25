@@ -75,8 +75,8 @@ contentContainerStyle={{
 
 1. delete user account
 2. logout user
-3. create error screen
-4. create loading screen
+3. create error screen ✅
+4. create loading screen ✅
 5. create splash screen
 
 
@@ -122,23 +122,25 @@ router.push({
 1. use expo image
 2. use pressable
 3. use react query
-4. implement optimistic updates for the like/unlike and the bookmarks/unbookmarks
-5. use typescript
-6. use SafeAreaView add edges={["top"]}
-7. use the improvements already applied in the useCategories.ts hook and the onboarding.tsx code
-8. when the comment icon is clicked it should open the post --- that is it should link to the single post.
-9. the user profile image should link to /preferences/profile
-10. implement infinite scroll to match the backend implementation
-11. make sure to handle when data is empty --- when there is no posts
-12. make sure to handle when there is error and retry
-13. You have built a similar UI above --- the ForYouFeed index.tsx code use the improvements already applied.
-14. Blur card background (expo-blur)
-15. Better icons (lucide-react-native)
-16. Time formatter ("2h ago") use date-fns
-17. the category tabs shouls scroll horizontally if they can not all be displayed in the screen at once.
-18. when a category is clicked the post for that category should be displayed. But when the app first loads 19. the post for the "General" category should be displayed.
+4. implement optimistic updates for the like and unlike
+5. implement optimistic updates for the the bookmarks/unbookmarks
+6. use typescript
+7. use SafeAreaView add edges={["top"]}
+8. use the improvements already applied in the useCategories.ts hook and the onboarding.tsx code
+9. when the comment icon is clicked it should open the post --- that is it should link to the single post.
+10. the user profile image should link to /preferences/profile
+11. implement infinite scroll to match the backend implementation
+12. make sure to handle when data is empty --- when there is no posts properly
+13. make sure to handle when there is error and retry properly
+14. You have built a similar UI above --- the ForYouFeed index.tsx code use the improvements already applied.
+15. Blur card background (expo-blur)
+16. Better icons (lucide-react-native)
+17. Time formatter ("2h ago") use date-fns
+18. the category tabs shouls scroll horizontally if they can not all be displayed in the screen at once.
+19. when a category is clicked the post for that category should be displayed. But when the app first loads 19. the post for the "General" category should be displayed.
 20. handle loading state
 21. use normal react native styles --- do not use tailwind css.
+22. handle empty state
 
 ForYouFeed index.tsx code
 onboarding.tsx

@@ -1,9 +1,6 @@
+import { EmptyUIProps } from "@/types";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-
-type EmptyUIProps = {
-  isLoading?: boolean;
-};
 
 const EmptyHomeFeedState = ({ isLoading }: EmptyUIProps) => {
   if (isLoading) return null;

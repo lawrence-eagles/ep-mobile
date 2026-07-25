@@ -24,3 +24,7 @@ export type FeedResponse = {
   items: Post[];
   nextCursor: string | null;
 };
+
+export type EmptyUIProps = {
+  isLoading?: boolean;
+};
