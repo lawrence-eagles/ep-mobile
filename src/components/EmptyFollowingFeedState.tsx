@@ -2,7 +2,7 @@ import { EmptyUIProps } from "@/types";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-const EmptyTrendingFeedState = ({ isLoading }: EmptyUIProps) => {
+const EmptyFollowingFeedState = ({ isLoading }: EmptyUIProps) => {
   if (isLoading) return null;
 
   return (
@@ -32,7 +32,7 @@ const EmptyTrendingFeedState = ({ isLoading }: EmptyUIProps) => {
   );
 };
 
-export default EmptyTrendingFeedState;
+export default EmptyFollowingFeedState;
 
 // ==============================
 // STYLES

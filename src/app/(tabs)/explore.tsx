@@ -204,7 +204,7 @@ const Explore = () => {
     if (isError && posts.length === 0) {
       return (
         <ErrorScreen
-          message={error?.message ?? "Failed to load"}
+          message={error?.message ?? "Failed to load posts"}
           onRetry={refetch}
         />
       );
