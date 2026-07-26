@@ -123,7 +123,7 @@ router.push({
 2. use pressable
 3. use react query
 4. implement optimistic updates for the like and unlike
-5. implement optimistic updates for the the bookmarks and unbookmarks
+5. implement optimistic updates for the bookmarks and unbookmarks
 6. use typescript
 7. use SafeAreaView add edges={["top"]}
 8. use the improvements already applied in the useCategories.ts hook and the onboarding.tsx code
