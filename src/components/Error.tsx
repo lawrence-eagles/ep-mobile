@@ -41,12 +41,22 @@ const ErrorScreen = ({
       </Text>
 
       {/* Primary Button */}
-      <Pressable style={styles.primaryButton} onPress={onRetry}>
+      <Pressable
+        style={styles.primaryButton}
+        onPress={onRetry}
+        accessibilityRole="button"
+        accessibilityLabel="Retry loading posts"
+      >
         <Text style={styles.primaryButtonText}>Try Again</Text>
       </Pressable>
 
       {/* Secondary Button */}
-      <Pressable onPress={handleGoBack} style={styles.secondaryButton}>
+      <Pressable
+        onPress={handleGoBack}
+        style={styles.secondaryButton}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
         <Text style={styles.secondaryButtonText}>Go Back</Text>
       </Pressable>
     </View>

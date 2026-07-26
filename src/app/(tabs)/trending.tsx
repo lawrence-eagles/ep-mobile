@@ -1,4 +1,5 @@
 import EmptyTrendingFeedState from "@/components/EmptyTrendingFeedState";
+import ErrorScreen from "@/components/Error";
 import { useAuth } from "@/hooks/useAuth";
 import { useTrendingInfiniteScroll } from "@/hooks/useTrendingInfiniteScroll";
 import { useTrendingMutations } from "@/hooks/useTrendingMutations";
@@ -25,6 +26,7 @@ export default function Trending() {
     data,
     isLoading,
     isError,
+    error,
     refetch,
     isRefetching,
     fetchNextPage,
@@ -89,16 +91,11 @@ export default function Trending() {
 
   if (isError && posts.length === 0) {
     return (
-      <SafeAreaView style={styles.center} edges={["top"]}>
-        <Text style={styles.errorText}>Something went wrong</Text>
-        <Pressable
-          onPress={() => refetch()}
-          style={styles.retryBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Retry loading trending posts"
-        >
-          <Text style={styles.retryText}>Retry</Text>
-        </Pressable>
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <ErrorScreen
+          message={error?.message ?? "Failed to load posts"}
+          onRetry={refetch}
+        />
       </SafeAreaView>
     );
   }
@@ -286,6 +283,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F7F7F7",
   },
   center: {
     flex: 1,

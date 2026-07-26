@@ -2,7 +2,7 @@ import { EmptyUIProps } from "@/types";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-const EmptyTrendingFeedState = ({ isLoading }: EmptyUIProps) => {
+const EmptyFollowingFeedState = ({ isLoading }: EmptyUIProps) => {
   if (isLoading) return null;
 
   return (
@@ -18,12 +18,16 @@ const EmptyTrendingFeedState = ({ isLoading }: EmptyUIProps) => {
         <Pressable
           onPress={() => router.push("/preferences/profile")}
           style={styles.emptyButton}
+          accessibilityRole="button"
+          accessibilityLabel="Update preferences"
         >
           <Text style={styles.emptyButtonText}>Update Preferences</Text>
         </Pressable>
         <Pressable
           onPress={() => router.push("/explore")}
           style={[styles.emptyButton, styles.emptyExploreButton]}
+          accessibilityRole="button"
+          accessibilityLabel="Go to explore"
         >
           <Text style={styles.emptyButtonText}>Go To Explore</Text>
         </Pressable>
@@ -32,7 +36,7 @@ const EmptyTrendingFeedState = ({ isLoading }: EmptyUIProps) => {
   );
 };
 
-export default EmptyTrendingFeedState;
+export default EmptyFollowingFeedState;
 
 // ==============================
 // STYLES

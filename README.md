@@ -123,7 +123,7 @@ router.push({
 2. use pressable
 3. use react query
 4. implement optimistic updates for the like and unlike
-5. implement optimistic updates for the the bookmarks/unbookmarks
+5. implement optimistic updates for the bookmarks and unbookmarks
 6. use typescript
 7. use SafeAreaView add edges={["top"]}
 8. use the improvements already applied in the useCategories.ts hook and the onboarding.tsx code
@@ -189,6 +189,24 @@ isError also becomes true when fetchNextPage fails, so users can lose an already
 Source: MCP tools
  -->
 
-<!--
-change the empty home feed state
- -->
+<!-- 1. use expo image
+2. use pressable
+3. use react query
+4. implement optimistic updates for the like and unlike
+5. implement optimistic updates for the the bookmarks and unbookmarks
+6. use typescript
+7. use SafeAreaView add edges={["top"]}
+8. use the improvements already applied in the useCategories.ts hook and the onboarding.tsx code
+9. when the comment icon is clicked it should open the post --- that is it should link to the single post.
+10. the user profile image should link to /preferences/profile
+11. implement infinite scroll to match the backend implementation
+12. make sure to handle when data is empty --- when there is no posts properly
+13. make sure to handle when there is error and retry properly
+14. You have built a similar UI above --- the ForYouFeed index.tsx code and in the following.tsx code use the improvements already applied.
+15. Blur card background (expo-blur)
+16. Better icons (lucide-react-native)
+17. Time formatter ("2h ago") use date-fns
+18. handle loading state
+19. use normal react native styles --- do not use tailwind css.
+20. handle empty state using flatlist
+21. note the issues raised by code rabbit in the UI you have built above and apply the improvements to avoid those issues. -->
