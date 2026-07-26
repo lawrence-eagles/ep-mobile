@@ -1,11 +1,349 @@
-import { Text, View } from "react-native";
+import EmptyBookmarksFeedState from "@/components/EmptyBookmarksFeedState";
+import ErrorScreen from "@/components/Error";
+import { useAuth } from "@/hooks/useAuth";
+import { useBookmarksFeedInfiniteScroll } from "@/hooks/useBookmarksFeedInfiniteScroll";
+import { useBookmarksMutations } from "@/hooks/useBookmarksMutations";
+import { Post } from "@/types";
+import { formatDistanceToNow } from "date-fns";
+import { BlurView } from "expo-blur";
+import { Image } from "expo-image";
+import { router } from "expo-router";
+import { Bookmark, Heart, MessageCircle } from "lucide-react-native";
+import { useCallback, useMemo } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+/* =========================
+   COMPONENT
+========================= */
 
 const Bookmarks = () => {
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    isRefetching,
+    isFetchNextPageError,
+  } = useBookmarksFeedInfiniteScroll();
+
+  const { bookmarkMutation, likeMutation, unbookmarkMutation, unlikeMutation } =
+    useBookmarksMutations();
+
+  const { user } = useAuth();
+
+  /* =========================
+     DATA
+  ========================= */
+
+  const posts = useMemo(
+    () => data?.pages.flatMap((p) => p.items ?? []) ?? [],
+    [data],
+  );
+
+  /* =========================
+     HELPERS
+  ========================= */
+
+  const openPost = useCallback((slug?: string | null) => {
+    if (!slug) return;
+    router.push({
+      pathname: "/post/[slug]",
+      params: { slug },
+    });
+  }, []);
+
+  const openProfile = useCallback(() => {
+    router.push("/preferences/profile");
+  }, []);
+
+  const formatTime = (date: string) => {
+    try {
+      return formatDistanceToNow(new Date(date), { addSuffix: true });
+    } catch {
+      return "Recently";
+    }
+  };
+
+  /* =========================
+     HANDLERS
+  ========================= */
+
+  const handleLike = useCallback(
+    (post: Post) => {
+      post.isLiked
+        ? unlikeMutation.mutate(post.id)
+        : likeMutation.mutate(post.id);
+    },
+    [likeMutation, unlikeMutation],
+  );
+
+  const handleBookmark = useCallback(
+    (post: Post) => {
+      post.isBookmarked
+        ? unbookmarkMutation.mutate(post.id)
+        : bookmarkMutation.mutate(post.id);
+    },
+    [bookmarkMutation, unbookmarkMutation],
+  );
+
+  /* =========================
+     STATES
+  ========================= */
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.center} edges={["top"]}>
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  }
+
+  if (isError && posts.length === 0) {
+    return (
+      <SafeAreaView style={styles.center} edges={["top"]}>
+        <ErrorScreen
+          message={error?.message ?? "Failed to load bookmarks"}
+          onRetry={refetch}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  /* =========================
+     RENDER ITEM
+  ========================= */
+
+  const renderItem = useCallback(
+    ({ item }: { item: Post }) => (
+      <Pressable
+        onPress={() => openPost(item.slug)}
+        style={styles.cardWrapper}
+        accessibilityRole="button"
+        accessibilityLabel={`Open post: ${item.title}`}
+      >
+        <BlurView intensity={40} tint="light" style={styles.card}>
+          <Image
+            source={item.imageUrl ? { uri: item.imageUrl } : undefined}
+            style={styles.image}
+            contentFit="cover"
+          />
+
+          <View style={styles.content}>
+            <Text style={styles.title} numberOfLines={2}>
+              {item.title}
+            </Text>
+
+            <Text style={styles.meta}>
+              {item.sourceName ?? "Unknown"} • {item.category ?? "General"} •{" "}
+              {formatTime(item.createdAt)}
+            </Text>
+
+            <View style={styles.actions}>
+              {/* LIKE */}
+              <Pressable
+                onPress={() => handleLike(item)}
+                style={styles.actionBtn}
+                hitSlop={10}
+              >
+                <Heart
+                  size={18}
+                  color={item.isLiked ? "#ef4444" : "#6b7280"}
+                  fill={item.isLiked ? "#ef4444" : "none"}
+                />
+                <Text style={styles.count}>{item.likesCount}</Text>
+              </Pressable>
+
+              {/* COMMENTS */}
+              <Pressable
+                onPress={() => openPost(item.slug)}
+                style={styles.actionBtn}
+                hitSlop={10}
+              >
+                <MessageCircle size={18} color="#6b7280" />
+                <Text style={styles.count}>{item.commentsCount}</Text>
+              </Pressable>
+
+              {/* BOOKMARK */}
+              <Pressable
+                onPress={() => handleBookmark(item)}
+                style={styles.actionBtn}
+                hitSlop={10}
+              >
+                <Bookmark
+                  size={18}
+                  color={item.isBookmarked ? "#2563eb" : "#6b7280"}
+                  fill={item.isBookmarked ? "#2563eb" : "none"}
+                />
+              </Pressable>
+            </View>
+          </View>
+        </BlurView>
+      </Pressable>
+    ),
+    [handleLike, handleBookmark, openPost],
+  );
+
+  /* =========================
+     UI
+  ========================= */
+
   return (
-    <View>
-      <Text>Bookmarks</Text>
-    </View>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Bookmarks</Text>
+
+        <Pressable onPress={openProfile}>
+          <Image
+            source={{
+              uri: user?.image ?? "https://i.pravatar.cc/100",
+            }}
+            style={styles.avatar}
+          />
+        </Pressable>
+      </View>
+
+      <FlatList
+        data={posts}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={
+          posts.length === 0 ? styles.emptyContainer : styles.list
+        }
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+        }
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <ActivityIndicator style={{ marginTop: 16 }} />
+          ) : isFetchNextPageError ? (
+            <Pressable onPress={() => fetchNextPage()} style={{ padding: 16 }}>
+              <Text style={{ textAlign: "center" }}>
+                Failed to load more. Tap to retry.
+              </Text>
+            </Pressable>
+          ) : null
+        }
+        ListEmptyComponent={<EmptyBookmarksFeedState isLoading={false} />}
+      />
+    </SafeAreaView>
   );
 };
 
 export default Bookmarks;
+
+/* =========================
+   STYLES
+========================= */
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+  },
+
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: "700",
+  },
+
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+  },
+
+  list: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+
+  emptyContainer: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+
+  cardWrapper: {
+    marginBottom: 16,
+  },
+
+  card: {
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.7)",
+    flexDirection: "row",
+  },
+
+  image: {
+    width: 110,
+    height: 110,
+  },
+
+  content: {
+    flex: 1,
+    padding: 12,
+    justifyContent: "space-between",
+  },
+
+  title: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  meta: {
+    fontSize: 12,
+    color: "#666",
+    marginVertical: 4,
+  },
+
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+
+  count: {
+    fontSize: 12,
+    color: "#444",
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

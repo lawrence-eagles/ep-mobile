@@ -200,7 +200,7 @@ Source: MCP tools
 9. when the comment icon is clicked it should open the post --- that is it should link to the single post.
 10. the user profile image should link to /preferences/profile
 11. implement infinite scroll to match the backend implementation
-12. make sure to handle when data is empty --- when there is no posts properly
+12. make sure to handle when data is empty --- when there is no posts, properly
 13. make sure to handle when there is error and retry properly
 14. You have built a similar UI above --- the ForYouFeed index.tsx code and in the following.tsx code use the improvements already applied.
 15. Blur card background (expo-blur)
