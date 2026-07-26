@@ -203,12 +203,10 @@ const Explore = () => {
     // ✅ error (but keep UI intact)
     if (isError && posts.length === 0) {
       return (
-        <SafeAreaView style={styles.safeArea} edges={["top"]}>
-          <ErrorScreen
-            message={error?.message ?? "Failed to load posts"}
-            onRetry={refetch}
-          />
-        </SafeAreaView>
+        <ErrorScreen
+          message={error?.message ?? "Failed to load posts"}
+          onRetry={refetch}
+        />
       );
     }
 
