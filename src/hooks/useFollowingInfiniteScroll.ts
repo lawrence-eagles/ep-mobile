@@ -6,7 +6,10 @@ export const useFollowingInfiniteScroll = () => {
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
-  const handleResponse = async (res: Response) => {
+  /**
+   * Handle fetch responses safely
+   */
+  const handleResponse = async (res: Response): Promise<FeedResponse> => {
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       throw new Error(text || `Request failed: ${res.status}`);
@@ -14,32 +17,45 @@ export const useFollowingInfiniteScroll = () => {
     return res.json();
   };
 
+  /**
+   * Fetch following feed with cursor pagination
+   * Avoid URLSearchParams (Hermes-safe)
+   */
   async function fetchFollowing({
     pageParam,
   }: {
     pageParam: string | null;
   }): Promise<FeedResponse> {
-    const url = new URL(`${API_BASE_URL}/feed/following`);
-    if (pageParam) url.searchParams.append("cursor", pageParam);
+    let url = `${API_BASE_URL}/feed/following`;
 
-    const res = await fetch(url.toString(), {
+    if (pageParam) {
+      const encodedCursor = encodeURIComponent(pageParam);
+      url += `?cursor=${encodedCursor}`;
+    }
+
+    const res = await fetch(url, {
+      method: "GET",
       credentials: "include",
     });
 
     return handleResponse(res);
   }
 
+  /**
+   * Infinite query
+   */
   const query = useInfiniteQuery<
     FeedResponse,
     Error,
-    InfiniteData<FeedResponse>
+    InfiniteData<FeedResponse>,
+    string[],
+    string | null
   >({
     queryKey: ["following-feed"],
-    queryFn: ({ pageParam }) =>
-      fetchFollowing({ pageParam: pageParam as string | null }),
+    queryFn: ({ pageParam }) => fetchFollowing({ pageParam }),
     initialPageParam: null,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-    staleTime: 1000 * 60,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? null,
+    staleTime: 1000 * 60, // 1 minute
   });
 
   return query;

@@ -65,10 +65,12 @@ const Following = () => {
 
   if (isError && posts.length === 0) {
     return (
-      <ErrorScreen
-        message={error?.message ?? "Failed to load posts"}
-        onRetry={refetch}
-      />
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <ErrorScreen
+          message={error?.message ?? "Failed to load posts"}
+          onRetry={refetch}
+        />
+      </SafeAreaView>
     );
   }
 
@@ -86,6 +88,8 @@ const Following = () => {
         })
       }
       style={styles.cardWrapper}
+      accessibilityRole="button"
+      accessibilityLabel={`Open post: ${item.title}`}
     >
       <BlurView intensity={40} style={styles.card}>
         <Image
@@ -210,6 +214,10 @@ export default Following;
  */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8fafc" },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F7F7F7",
+  },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
     flexDirection: "row",

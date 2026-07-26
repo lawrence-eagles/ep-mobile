@@ -18,12 +18,16 @@ const EmptyFollowingFeedState = ({ isLoading }: EmptyUIProps) => {
         <Pressable
           onPress={() => router.push("/preferences/profile")}
           style={styles.emptyButton}
+          accessibilityRole="button"
+          accessibilityLabel="Update preferences"
         >
           <Text style={styles.emptyButtonText}>Update Preferences</Text>
         </Pressable>
         <Pressable
           onPress={() => router.push("/explore")}
           style={[styles.emptyButton, styles.emptyExploreButton]}
+          accessibilityRole="button"
+          accessibilityLabel="Go to explore"
         >
           <Text style={styles.emptyButtonText}>Go To Explore</Text>
         </Pressable>

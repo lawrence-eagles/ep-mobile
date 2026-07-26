@@ -91,10 +91,12 @@ export default function Trending() {
 
   if (isError && posts.length === 0) {
     return (
-      <ErrorScreen
-        message={error?.message ?? "Failed to load posts"}
-        onRetry={refetch}
-      />
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <ErrorScreen
+          message={error?.message ?? "Failed to load posts"}
+          onRetry={refetch}
+        />
+      </SafeAreaView>
     );
   }
 
@@ -281,6 +283,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F7F7F7",
   },
   center: {
     flex: 1,

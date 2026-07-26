@@ -136,6 +136,10 @@ export const useFollowingMutations = () => {
         updatePost(ctx.postId, () => ctx.prev!);
       }
     },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["following-feed"] });
+    },
   });
 
   return {
