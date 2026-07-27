@@ -80,15 +80,6 @@ contentContainerStyle={{
 5. create splash screen
 
 
-the code above is my authentication index.ts code, update the code by implementing the ui of the image i uploaded. return a production ready authentication index.ts code. do not omit or miss anything.
-
-note when the continue with email button is clicked the user should be redirected to the login page.
-use zod for validation, use expo image, and use Pressable for buttons.
-
-
-
-in the image i uploaded upscale the hero-image illustration, make it a transparent background.
-
 # AI generated screens to do:
 1. download those icons gotten from online and use them in the expo image ✅
 2. in the forgot password screen check the back arrow to make sure you use the correct icon -- the fix is in rest password use ionicons ✅
@@ -96,7 +87,7 @@ in the image i uploaded upscale the hero-image illustration, make it a transpare
 4. make sure all expo images are linked correctly
 5. cross check the open eye close eye implementation in login, register and other forms. ✅
 6. check the forgot password back button to make sure the style is ok ✅
-7. check the reset password wave and password eyes
+7. check the reset password wave and password eyes ✅
 8. check the verify email back button to make sure the style is ok.
 9. check the apostrophe sign in login page.
 10. Add ad injection every 4 posts (you already planned this) -- in for-you feed
@@ -154,41 +145,6 @@ NOTE IMPLEMENT THE LOADING PAGE LIKE THE ERROR PAGE AND USE IT.
 NOTE UPLOAD A FALLBACK IMAGE FOR THE USER PROFILE IN FEED AND OTHER SCREENS
  -->
 
-<!--
-CODE RABBIT BUGS COMMENT ON FORYOUFEED --- INDEX.TSX --- NOTE I HAVE FIXED THEM WITH CHATGPT AND CODE RABIIT SUGGESTED FIXES.
-
-Prevent concurrent optimistic toggles.
-
-Because the optimistic item.isLiked/item.isBookmarked value changes immediately, a rapid second tap can dispatch the opposite mutation before the first request settles. Disable each action while either mutation in its pair is pending, or serialize toggle requests, to avoid out-of-order like/bookmark state.
-
-🤖 Prompt for AI Agents
-91-131: 🎯 Functional Correctness | 🟠 Major | ⚡ Quick win
-
-Make the post actions accessible and comfortably tappable.
-
-These icon-only controls have no accessibility labels, roles, or state descriptions. Add dynamic labels such as “Like post”/“Unlike post”, accessibilityRole="button", accessibilityState, and a minimum 44dp press target or appropriate hitSlop.
-
-🤖 Prompt for AI Agents
-194-196: 🚀 Performance & Scalability | 🟠 Major | ⚡ Quick win
-
-Guard pagination while the next page is loading.
-
-onEndReached can fire while the previous page request is still in flight, and hasNextPage stays true until the next page state is fetched. Gate fetchNextPage() with !isFetchingNextPage to avoid duplicate requests.
-
-Suggested fix
-🤖 Prompt for AI Agents
-Source: MCP tools
-
-157-165: 🩺 Stability & Availability | 🟠 Major | ⚡ Quick win
-
-Keep loaded posts visible when a later page fails.
-
-isError also becomes true when fetchNextPage fails, so users can lose an already-loaded feed to ErrorScreen. Show ErrorScreen only for initial/no-data failures, and render an inline footer retry for isFetchNextPageError that calls fetchNextPage.
-
-🤖 Prompt for AI Agents
-Source: MCP tools
- -->
-
 <!-- 1. use expo image
 2. use pressable
 3. use react query
@@ -200,7 +156,7 @@ Source: MCP tools
 9. when the comment icon is clicked it should open the post --- that is it should link to the single post.
 10. the user profile image should link to /preferences/profile
 11. implement infinite scroll to match the backend implementation
-12. make sure to handle when data is empty --- when there is no posts properly
+12. make sure to handle when data is empty --- when there is no posts, properly
 13. make sure to handle when there is error and retry properly
 14. You have built a similar UI above --- the ForYouFeed index.tsx code and in the following.tsx code use the improvements already applied.
 15. Blur card background (expo-blur)
