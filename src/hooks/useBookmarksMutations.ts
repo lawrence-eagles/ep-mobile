@@ -21,8 +21,8 @@ export const useBookmarksMutations = () => {
   };
 
   /* =========================
-    CACHE HELPERS
-   ========================= */
+     CACHE HELPERS
+  ========================= */
 
   const updatePost = useCallback(
     (postId: string, updater: (p: Post) => Post) => {
@@ -65,8 +65,8 @@ export const useBookmarksMutations = () => {
   );
 
   /* =========================
-    MUTATIONS
-    ========================= */
+     MUTATIONS
+  ========================= */
 
   const likeMutation = useMutation({
     mutationFn: async (postId: string) => {
@@ -94,6 +94,9 @@ export const useBookmarksMutations = () => {
         likesCount: Math.max(p.likesCount - 1, 0),
       }));
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+    },
   });
 
   const unlikeMutation = useMutation({
@@ -120,9 +123,17 @@ export const useBookmarksMutations = () => {
         likesCount: p.likesCount + 1,
       }));
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+    },
   });
 
-  const bookmarkMutation = useMutation({
+  const bookmarkMutation = useMutation<
+    void,
+    Error,
+    string,
+    { previousData?: InfiniteData<FeedResponse> }
+  >({
     mutationFn: async (postId: string) => {
       const res = await fetch(`${API_BASE_URL}/bookmark`, {
         method: "POST",
@@ -132,17 +143,39 @@ export const useBookmarksMutations = () => {
       });
       await handleResponse(res);
     },
+
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["bookmarks"] });
+
+      const previousData = queryClient.getQueryData<InfiniteData<FeedResponse>>(
+        ["bookmarks"],
+      );
 
       updatePost(postId, (p) => ({
         ...p,
         isBookmarked: true,
       }));
+
+      return { previousData };
+    },
+
+    onError: (_err, _postId, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(["bookmarks"], context.previousData);
+      }
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
     },
   });
 
-  const unbookmarkMutation = useMutation({
+  const unbookmarkMutation = useMutation<
+    void,
+    Error,
+    string,
+    { previousData?: InfiniteData<FeedResponse> }
+  >({
     mutationFn: async (postId: string) => {
       const res = await fetch(`${API_BASE_URL}/bookmark/${postId}`, {
         method: "DELETE",
@@ -150,11 +183,26 @@ export const useBookmarksMutations = () => {
       });
       await handleResponse(res);
     },
+
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["bookmarks"] });
+
+      const previousData = queryClient.getQueryData<InfiniteData<FeedResponse>>(
+        ["bookmarks"],
+      );
+
       removePost(postId);
+
+      return { previousData };
     },
-    onError: () => {
+
+    onError: (_err, _postId, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(["bookmarks"], context.previousData);
+      }
+    },
+
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
     },
   });

@@ -48,17 +48,18 @@ const Bookmarks = () => {
      DATA
   ========================= */
 
-  const posts = useMemo(
-    () => data?.pages.flatMap((p) => p.items ?? []) ?? [],
-    [data],
-  );
+  const posts = useMemo<Post[]>(() => {
+    if (!data?.pages) return [];
+    return data.pages.flatMap((p) => p?.items ?? []);
+  }, [data]);
 
   /* =========================
      HELPERS
   ========================= */
 
   const openPost = useCallback((slug?: string | null) => {
-    if (!slug) return;
+    if (typeof slug !== "string" || !slug.trim()) return;
+
     router.push({
       pathname: "/post/[slug]",
       params: { slug },
@@ -78,25 +79,42 @@ const Bookmarks = () => {
   };
 
   /* =========================
+     MUTATION GUARDS
+  ========================= */
+
+  const isLikePending = likeMutation.isPending || unlikeMutation.isPending;
+
+  const isBookmarkPending =
+    bookmarkMutation.isPending || unbookmarkMutation.isPending;
+
+  /* =========================
      HANDLERS
   ========================= */
 
   const handleLike = useCallback(
     (post: Post) => {
-      post.isLiked
-        ? unlikeMutation.mutate(post.id)
-        : likeMutation.mutate(post.id);
+      if (isLikePending) return;
+
+      if (post.isLiked) {
+        unlikeMutation.mutate(post.id);
+      } else {
+        likeMutation.mutate(post.id);
+      }
     },
-    [likeMutation, unlikeMutation],
+    [isLikePending, likeMutation, unlikeMutation],
   );
 
   const handleBookmark = useCallback(
     (post: Post) => {
-      post.isBookmarked
-        ? unbookmarkMutation.mutate(post.id)
-        : bookmarkMutation.mutate(post.id);
+      if (isBookmarkPending) return;
+
+      if (post.isBookmarked) {
+        unbookmarkMutation.mutate(post.id);
+      } else {
+        bookmarkMutation.mutate(post.id);
+      }
     },
-    [bookmarkMutation, unbookmarkMutation],
+    [isBookmarkPending, bookmarkMutation, unbookmarkMutation],
   );
 
   /* =========================
@@ -115,7 +133,9 @@ const Bookmarks = () => {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
         <ErrorScreen
-          message={error?.message ?? "Failed to load bookmarks"}
+          message={
+            error instanceof Error ? error.message : "Failed to load bookmarks"
+          }
           onRetry={refetch}
         />
       </SafeAreaView>
@@ -157,6 +177,13 @@ const Bookmarks = () => {
                 onPress={() => handleLike(item)}
                 style={styles.actionBtn}
                 hitSlop={10}
+                disabled={isLikePending}
+                accessibilityRole="button"
+                accessibilityLabel={item.isLiked ? "Unlike post" : "Like post"}
+                accessibilityState={{
+                  selected: item.isLiked,
+                  disabled: isLikePending,
+                }}
               >
                 <Heart
                   size={18}
@@ -171,6 +198,8 @@ const Bookmarks = () => {
                 onPress={() => openPost(item.slug)}
                 style={styles.actionBtn}
                 hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="View comments"
               >
                 <MessageCircle size={18} color="#6b7280" />
                 <Text style={styles.count}>{item.commentsCount}</Text>
@@ -181,6 +210,15 @@ const Bookmarks = () => {
                 onPress={() => handleBookmark(item)}
                 style={styles.actionBtn}
                 hitSlop={10}
+                disabled={isBookmarkPending}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  item.isBookmarked ? "Remove bookmark" : "Bookmark post"
+                }
+                accessibilityState={{
+                  selected: item.isBookmarked,
+                  disabled: isBookmarkPending,
+                }}
               >
                 <Bookmark
                   size={18}
@@ -193,7 +231,7 @@ const Bookmarks = () => {
         </BlurView>
       </Pressable>
     ),
-    [handleLike, handleBookmark, openPost],
+    [handleLike, handleBookmark, openPost, isLikePending, isBookmarkPending],
   );
 
   /* =========================
@@ -209,7 +247,10 @@ const Bookmarks = () => {
         <Pressable onPress={openProfile}>
           <Image
             source={{
-              uri: user?.image ?? "https://i.pravatar.cc/100",
+              uri:
+                typeof user?.image === "string"
+                  ? user.image
+                  : "https://i.pravatar.cc/100",
             }}
             style={styles.avatar}
           />
@@ -218,7 +259,7 @@ const Bookmarks = () => {
 
       <FlatList
         data={posts}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         contentContainerStyle={
           posts.length === 0 ? styles.emptyContainer : styles.list
@@ -252,7 +293,7 @@ const Bookmarks = () => {
 export default Bookmarks;
 
 /* =========================
-   STYLES
+   STYLES (UNCHANGED)
 ========================= */
 
 const styles = StyleSheet.create({
