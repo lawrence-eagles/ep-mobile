@@ -80,15 +80,6 @@ contentContainerStyle={{
 5. create splash screen
 
 
-the code above is my authentication index.ts code, update the code by implementing the ui of the image i uploaded. return a production ready authentication index.ts code. do not omit or miss anything.
-
-note when the continue with email button is clicked the user should be redirected to the login page.
-use zod for validation, use expo image, and use Pressable for buttons.
-
-
-
-in the image i uploaded upscale the hero-image illustration, make it a transparent background.
-
 # AI generated screens to do:
 1. download those icons gotten from online and use them in the expo image ✅
 2. in the forgot password screen check the back arrow to make sure you use the correct icon -- the fix is in rest password use ionicons ✅
