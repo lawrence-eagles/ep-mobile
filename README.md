@@ -96,7 +96,7 @@ in the image i uploaded upscale the hero-image illustration, make it a transpare
 4. make sure all expo images are linked correctly
 5. cross check the open eye close eye implementation in login, register and other forms. ✅
 6. check the forgot password back button to make sure the style is ok ✅
-7. check the reset password wave and password eyes
+7. check the reset password wave and password eyes ✅
 8. check the verify email back button to make sure the style is ok.
 9. check the apostrophe sign in login page.
 10. Add ad injection every 4 posts (you already planned this) -- in for-you feed
@@ -152,41 +152,6 @@ NOTE UPDATE ROUTES IN ALL FETCH HOOKS
 NOTE ALLOW USERS TO UPLOAD PROFILE IMAGE
 NOTE IMPLEMENT THE LOADING PAGE LIKE THE ERROR PAGE AND USE IT.
 NOTE UPLOAD A FALLBACK IMAGE FOR THE USER PROFILE IN FEED AND OTHER SCREENS
- -->
-
-<!--
-CODE RABBIT BUGS COMMENT ON FORYOUFEED --- INDEX.TSX --- NOTE I HAVE FIXED THEM WITH CHATGPT AND CODE RABIIT SUGGESTED FIXES.
-
-Prevent concurrent optimistic toggles.
-
-Because the optimistic item.isLiked/item.isBookmarked value changes immediately, a rapid second tap can dispatch the opposite mutation before the first request settles. Disable each action while either mutation in its pair is pending, or serialize toggle requests, to avoid out-of-order like/bookmark state.
-
-🤖 Prompt for AI Agents
-91-131: 🎯 Functional Correctness | 🟠 Major | ⚡ Quick win
-
-Make the post actions accessible and comfortably tappable.
-
-These icon-only controls have no accessibility labels, roles, or state descriptions. Add dynamic labels such as “Like post”/“Unlike post”, accessibilityRole="button", accessibilityState, and a minimum 44dp press target or appropriate hitSlop.
-
-🤖 Prompt for AI Agents
-194-196: 🚀 Performance & Scalability | 🟠 Major | ⚡ Quick win
-
-Guard pagination while the next page is loading.
-
-onEndReached can fire while the previous page request is still in flight, and hasNextPage stays true until the next page state is fetched. Gate fetchNextPage() with !isFetchingNextPage to avoid duplicate requests.
-
-Suggested fix
-🤖 Prompt for AI Agents
-Source: MCP tools
-
-157-165: 🩺 Stability & Availability | 🟠 Major | ⚡ Quick win
-
-Keep loaded posts visible when a later page fails.
-
-isError also becomes true when fetchNextPage fails, so users can lose an already-loaded feed to ErrorScreen. Show ErrorScreen only for initial/no-data failures, and render an inline footer retry for isFetchNextPageError that calls fetchNextPage.
-
-🤖 Prompt for AI Agents
-Source: MCP tools
  -->
 
 <!-- 1. use expo image
