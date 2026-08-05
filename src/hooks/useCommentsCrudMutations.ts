@@ -13,6 +13,26 @@ interface UpdateCommentPayload {
   content: string;
 }
 
+// ================= HELPERS =================
+
+const handleResponse = async (res: Response) => {
+  if (!res.ok) {
+    let message = "Something went wrong";
+
+    try {
+      const data = await res.json();
+      message = data?.message || message;
+    } catch {
+      const text = await res.text().catch(() => "");
+      if (text) message = text;
+    }
+
+    throw new Error(message);
+  }
+
+  return res.json().catch(() => undefined);
+};
+
 // ================= HOOK =================
 
 export const useCommentsCrudMutations = ({
@@ -55,18 +75,17 @@ export const useCommentsCrudMutations = ({
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to create comment");
-      }
-
-      return res.json().catch(() => undefined);
+      await handleResponse(res);
     },
 
     onSuccess: () => {
       setInput("");
       setReplyTo(null);
-
       queryClient.invalidateQueries({ queryKey });
+    },
+
+    onError: (error) => {
+      console.error("Create comment failed:", error.message);
     },
   });
 
@@ -78,15 +97,15 @@ export const useCommentsCrudMutations = ({
         method: "DELETE",
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to delete comment");
-      }
-
-      return res.json().catch(() => undefined);
+      await handleResponse(res);
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
+    },
+
+    onError: (error) => {
+      console.error("Delete comment failed:", error.message);
     },
   });
 
@@ -106,15 +125,15 @@ export const useCommentsCrudMutations = ({
         body: JSON.stringify({ content: content.trim() }),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to update comment");
-      }
-
-      return res.json().catch(() => undefined);
+      await handleResponse(res);
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
+    },
+
+    onError: (error) => {
+      console.error("Update comment failed:", error.message);
     },
   });
 

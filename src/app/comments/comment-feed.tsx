@@ -1,4 +1,3 @@
-import { useAuth } from "@/hooks/useAuth";
 import { useCommentsCrudMutations } from "@/hooks/useCommentsCrudMutations";
 import { useCommentsInfiniteScroll } from "@/hooks/useCommentsInfiniteScroll";
 import { useCommentsMutations } from "@/hooks/useCommentsMutations";
@@ -12,6 +11,8 @@ import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -19,6 +20,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+// ================= HELPERS =================
+
+const getSafeTimeAgo = (dateString: string) => {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "";
+  return formatDistanceToNow(date, { addSuffix: true });
+};
 
 // ================= COMPONENT =================
 
@@ -30,8 +39,6 @@ export default function CommentScreen() {
 
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<string | null>(null);
-
-  const { user } = useAuth();
 
   const {
     data,
@@ -54,7 +61,14 @@ export default function CommentScreen() {
       setReplyTo,
     });
 
-  // ✅ MEMOIZED (IMPORTANT)
+  const mutationError =
+    createMutation.error?.message ||
+    deleteMutation.error?.message ||
+    updateMutation.error?.message;
+
+  const isSendDisabled = !input.trim() || createMutation.isPending;
+
+  // ✅ MEMOIZED
   const comments = useMemo(() => {
     return data?.pages.flatMap((page) => page.comments) ?? [];
   }, [data]);
@@ -77,7 +91,7 @@ export default function CommentScreen() {
   const renderReply = useCallback(
     (reply: Reply) => (
       <View key={reply.id} style={styles.replyContainer}>
-        <Text style={styles.username}>{reply.userName ?? "User"}</Text>
+        <Text style={styles.username}>{reply.userName}</Text>
 
         <Text>{reply.content}</Text>
 
@@ -106,19 +120,17 @@ export default function CommentScreen() {
         <View style={styles.row}>
           <Image
             source={{
-              uri: item.userImage ?? "https://i.pravatar.cc/100",
+              uri: item.userImage,
             }}
             style={styles.avatar}
           />
 
           <View style={{ flex: 1 }}>
-            <Text style={styles.username}>{item.userName ?? "User"}</Text>
+            <Text style={styles.username}>{item.userName}</Text>
 
             <Text>{item.content}</Text>
 
-            <Text style={styles.time}>
-              {formatDistanceToNow(new Date(item.created_at))} ago
-            </Text>
+            <Text style={styles.time}>{getSafeTimeAgo(item.created_at)}</Text>
 
             <View style={styles.actions}>
               <Pressable
@@ -138,7 +150,7 @@ export default function CommentScreen() {
                 onPress={() =>
                   updateMutation.mutate({
                     id: item.id,
-                    content: input, // ✅ FIXED
+                    content: input,
                   })
                 }
               >
@@ -153,8 +165,7 @@ export default function CommentScreen() {
               </Pressable>
             </View>
 
-            {/* replies */}
-            {item.replies?.length > 0 ? item.replies.map(renderReply) : null}
+            {item.replies.length > 0 ? item.replies.map(renderReply) : null}
           </View>
         </View>
       </View>
@@ -195,18 +206,16 @@ export default function CommentScreen() {
     );
   }
 
-  if (!comments.length) {
-    return (
-      <View style={styles.center}>
-        <Text>No comments yet</Text>
-      </View>
-    );
-  }
-
   // ================= RETURN =================
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      {mutationError ? (
+        <View style={{ padding: 10 }}>
+          <Text style={{ color: "red" }}>{mutationError}</Text>
+        </View>
+      ) : null}
+
       <FlatList
         data={comments}
         renderItem={renderComment}
@@ -220,25 +229,42 @@ export default function CommentScreen() {
         initialNumToRender={10}
         windowSize={5}
         removeClippedSubviews
+        ListEmptyComponent={
+          <View style={styles.center}>
+            <Text>No comments yet</Text>
+          </View>
+        }
         ListFooterComponent={isFetchingNextPage ? <ActivityIndicator /> : null}
       />
 
-      {/* input */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          value={input}
-          onChangeText={setInput}
-          placeholder={replyTo ? "Replying..." : "Add a comment..."}
-          style={styles.input}
-        />
+      {/* INPUT + KEYBOARD FIX */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={80}
+      >
+        <View style={styles.inputContainer}>
+          <TextInput
+            value={input}
+            onChangeText={setInput}
+            placeholder={replyTo ? "Replying..." : "Add a comment..."}
+            style={styles.input}
+          />
 
-        <Pressable
-          onPress={() => createMutation.mutate()}
-          disabled={createMutation.isPending}
-        >
-          <Text>{createMutation.isPending ? "..." : "Send"}</Text>
-        </Pressable>
-      </View>
+          {/* cancel reply */}
+          {replyTo && (
+            <Pressable onPress={() => setReplyTo(null)}>
+              <Text style={{ marginRight: 8 }}>Cancel</Text>
+            </Pressable>
+          )}
+
+          <Pressable
+            onPress={() => createMutation.mutate()}
+            disabled={isSendDisabled}
+          >
+            <Text>{createMutation.isPending ? "..." : "Send"}</Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -280,6 +306,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderTopWidth: 1,
     borderColor: "#eee",
+    alignItems: "center",
   },
 
   input: {

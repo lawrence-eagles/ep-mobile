@@ -144,15 +144,18 @@ export default function PostDetailScreen() {
           <Pressable
             style={styles.recommendBtn}
             onPress={async () => {
-              const data = await shareApp("post-detail");
-
-              router.push({
-                pathname: "/share/app-screen",
-                params: {
-                  shareId: data.shareId,
-                  url: data.url,
-                },
-              });
+              try {
+                const share = await shareApp("post-detail");
+                router.push({
+                  pathname: "/share/app-screen",
+                  params: {
+                    shareId: share?.shareId,
+                    url: share?.url,
+                  },
+                });
+              } catch {
+                Alert.alert("Error", "Unable to create a share link");
+              }
             }}
           >
             <Text style={styles.recommendText}>Recommend app</Text>
@@ -214,7 +217,7 @@ export default function PostDetailScreen() {
               >
                 <MessageCircle size={22} />
               </Pressable>
-              <Text>{data.commentsCount ?? 0}</Text> // note i added
+              <Text>{data.commentsCount ?? 0}</Text>
               {/* BOOKMARK */}
               <Pressable onPress={toggleBookmark} disabled={isBookmarkPending}>
                 <Bookmark
