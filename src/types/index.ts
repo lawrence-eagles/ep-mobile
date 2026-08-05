@@ -28,3 +28,34 @@ export type FeedResponse = {
 export type EmptyUIProps = {
   isLoading?: boolean;
 };
+
+export type Reply = {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  likesCount: number;
+  isLiked: boolean;
+  userImage: string;
+  userName: string;
+};
+
+export type Comment = {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  likesCount: number;
+  userImage: string;
+  userName: string;
+  isLiked: boolean;
+  replies: Reply[];
+  repliesNextCursor: string | null;
+  repliesHasMore: boolean;
+};
+
+export type commentFeedResponse = {
+  comments: Comment[];
+  nextCursor: string | null;
+  hasMore: boolean;
+};
