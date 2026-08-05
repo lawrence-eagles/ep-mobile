@@ -143,26 +143,37 @@ NOTE UPDATE ROUTES IN ALL FETCH HOOKS
 NOTE ALLOW USERS TO UPLOAD PROFILE IMAGE
 NOTE IMPLEMENT THE LOADING PAGE LIKE THE ERROR PAGE AND USE IT.
 NOTE UPLOAD A FALLBACK IMAGE FOR THE USER PROFILE IN FEED AND OTHER SCREENS
+NOTE CREATE THE PLACEHOLDER IMAGE FOR THE [SLUG].TSX SCREEN
+NOTE IN THE [SLUG].TSX SCREEN UPDATE THE CREDENTIAL INCLUDE IN THE SHAREAPP FUNCTION TO BETTER AUTH METHOD
+NOTE IMPLEMENT PUSH NOTIFICATION
  -->
 
 <!-- 1. use expo image
 2. use pressable
 3. use react query
-4. implement optimistic updates for the like and unlike
-5. implement optimistic updates for the the bookmarks and unbookmarks
-6. use typescript
-7. use SafeAreaView add edges={["top"]}
+4. implement optimistic updates for the like comment and unlike comment
+5. use typescript
+6. use SafeAreaView add edges={["top"]}
+7. implement infinite scroll to match the backend implementation
 8. use the improvements already applied in the useCategories.ts hook and the onboarding.tsx code
-9. when the comment icon is clicked it should open the post --- that is it should link to the single post.
-10. the user profile image should link to /preferences/profile
-11. implement infinite scroll to match the backend implementation
-12. make sure to handle when data is empty --- when there is no posts, properly
-13. make sure to handle when there is error and retry properly
-14. You have built a similar UI above --- the ForYouFeed index.tsx code and in the following.tsx code use the improvements already applied.
-15. Blur card background (expo-blur)
-16. Better icons (lucide-react-native)
-17. Time formatter ("2h ago") use date-fns
-18. handle loading state
-19. use normal react native styles --- do not use tailwind css.
-20. handle empty state using flatlist
-21. note the issues raised by code rabbit in the UI you have built above and apply the improvements to avoid those issues. -->
+9. make sure to handle when there is error and retry properly
+10. Blur card background (expo-blur)
+11. Better icons (lucide-react-native)
+12. Time formatter ("2h ago") use date-fns
+13. handle loading state
+14. use normal react native styles --- do not use tailwind css.
+15. note the issues raised by code rabbit in the UI you have built above and apply the improvements to avoid those issues.
+16. fetch comments using the id received as params i passed from the post detail components using:
+
+```js
+router.push({
+  pathname: "/comments/comment-feed",
+  params: { postId: data.id },
+});
+```
+
+17. Handle empty comment --- when there is no comment
+18. handle create comment to match the backend implementation
+19. handle update comment to match the backend implementation
+20. handle delete comment to match the backend implementation
+21. handle comment reply properly, to match the backend implementation -->
