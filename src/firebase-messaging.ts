@@ -15,11 +15,13 @@ const messaging = getMessaging(getApp());
  */
 messaging.setBackgroundMessageHandler(async (remoteMessage: RemoteMessage) => {
   try {
-    console.log("📩 Background message received:", {
-      messageId: remoteMessage.messageId,
-      data: remoteMessage.data,
-      notification: remoteMessage.notification,
-    });
+    // console.log("📩 Background message received:", {
+    //   messageId: remoteMessage.messageId,
+    //   data: remoteMessage.data,
+    //   notification: remoteMessage.notification,
+    // });
+
+    console.log("📩 Background message received");
 
     /**
      * 🔥 PRODUCTION NOTE:

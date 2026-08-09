@@ -207,3 +207,14 @@ router.push({
 19. handle update comment to match the backend implementation
 20. handle delete comment to match the backend implementation
 21. handle comment reply properly, to match the backend implementation -->
+
+<!--
+Notification improvements
+🚀 Optional next step (highly recommended)
+
+If you want this to be bulletproof, next improvements:
+
+Store registered key in AsyncStorage (persist across app restarts)
+Add backend endpoint to delete token on logout
+Handle multiple devices per user
+ -->

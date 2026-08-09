@@ -22,8 +22,10 @@ import "../firebase-messaging"; // ✅ background handler
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
-  const { isAuthenticated } = useAuth();
-  const lastTokenRef = useRef<string | null>(null);
+  const { isAuthenticated, user } = useAuth();
+
+  // ✅ User-scoped deduplication key
+  const lastRegisteredKeyRef = useRef<string | null>(null);
 
   // 🔔 Push setup
   useEffect(() => {
@@ -31,36 +33,55 @@ export default function RootLayout() {
 
     async function setupPush() {
       try {
-        if (!isAuthenticated) return;
-
-        const hasPermission = await requestNotificationPermission();
-        if (!hasPermission) return;
+        if (!isAuthenticated || !user?.id) return;
 
         const app = getApp();
         const messaging = getMessaging(app);
+
+        // ✅ ANDROID: Create channel BEFORE requesting permission
+        if (Platform.OS === "android") {
+          await Notifications.setNotificationChannelAsync("default", {
+            name: "default",
+            importance: Notifications.AndroidImportance.MAX,
+          });
+        }
+
+        // ✅ Request permission AFTER channel exists
+        const hasPermission = await requestNotificationPermission();
+        if (!hasPermission) return;
 
         // ✅ Required for iOS
         await registerDeviceForRemoteMessages(messaging);
 
         // 1️⃣ Get FCM token
         const token = await getToken(messaging);
+        const currentKey = `${user.id}:${token}`;
 
-        if (token && token !== lastTokenRef.current) {
-          lastTokenRef.current = token;
+        if (token && currentKey !== lastRegisteredKeyRef.current) {
           console.log("📱 FCM Token:", token);
 
-          await sendTokenToBackend(token);
+          const success = await sendTokenToBackend(token);
+
+          // ✅ Only store key if backend confirms success
+          if (success) {
+            lastRegisteredKeyRef.current = currentKey;
+          }
         }
 
         // 2️⃣ Listen for token refresh
         unsubscribeRefresh = onTokenRefresh(
           messaging,
           async (newToken: string) => {
-            console.log("🔄 FCM Token refreshed:", newToken);
+            console.log("🔄 FCM Token refreshed");
 
-            if (newToken !== lastTokenRef.current) {
-              lastTokenRef.current = newToken;
-              await sendTokenToBackend(newToken);
+            const newKey = `${user.id}:${newToken}`;
+
+            if (newKey !== lastRegisteredKeyRef.current) {
+              const success = await sendTokenToBackend(newToken);
+
+              if (success) {
+                lastRegisteredKeyRef.current = newKey;
+              }
             }
           },
         );
@@ -74,28 +95,26 @@ export default function RootLayout() {
     return () => {
       if (unsubscribeRefresh) unsubscribeRefresh();
     };
+  }, [isAuthenticated, user?.id]);
+
+  // ✅ Clear token state on logout
+  useEffect(() => {
+    if (!isAuthenticated) {
+      lastRegisteredKeyRef.current = null;
+    }
   }, [isAuthenticated]);
 
-  // 🔔 Foreground notifications (UPDATED ✅)
+  // 🔔 Foreground notifications (no channel creation here anymore ❌➡️✅)
   useEffect(() => {
     const app = getApp();
     const messaging = getMessaging(app);
 
-    // ✅ Android notification channel
-    if (Platform.OS === "android") {
-      Notifications.setNotificationChannelAsync("default", {
-        name: "default",
-        importance: Notifications.AndroidImportance.MAX,
-      });
-    }
-
     const unsubscribe = onMessage(messaging, async (remoteMessage) => {
-      console.log("📲 Foreground notification:", remoteMessage);
+      console.log("📲 Foreground notification");
 
       const title = remoteMessage.notification?.title ?? "New Notification";
       const body = remoteMessage.notification?.body ?? "You have a new update";
 
-      // ✅ Toast instead of Alert
       Toast.show({
         type: "success",
         text1: title,
@@ -110,7 +129,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <StatusBar style="dark" />
+      <StatusBar style="auto" />
 
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" options={{ animation: "fade" }} />
