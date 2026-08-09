@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "849762014895",
+    "project_id": "eaglespress-b92d3",
+    "storage_bucket": "eaglespress-b92d3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:849762014895:android:a509dc86cc43e7082da65a",
+        "android_client_info": {
+          "package_name": "com.anonymous.eaglespress"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBd9Bk41G0fY-fdQIHVa1UduBWJ6VT-CSc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
