@@ -58,7 +58,7 @@ export default function RootLayout() {
         const currentKey = `${user.id}:${token}`;
 
         if (token && currentKey !== lastRegisteredKeyRef.current) {
-          console.log("📱 FCM Token:", token);
+          console.log("📱 FCM Token:");
 
           const success = await sendTokenToBackend(token);
 
