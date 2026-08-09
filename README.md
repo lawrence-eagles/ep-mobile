@@ -70,7 +70,37 @@ contentContainerStyle={{
 }}
 ```
 
+## Firebase
+
+https://console.firebase.google.com/
+
 <!--
+splash screen
+Size: 1242 x 2436
+Format: PNG
+Background: solid (no transparency)
+
+icon
+Size: 1024 x 1024
+Format: PNG
+NO transparency (important for Android)
+Keep padding (don’t let content touch edges)
+
+Adaptive icon (Android)
+Transparent background
+Logo centered
+Plenty of padding
+
+"adaptiveIcon": {
+  "backgroundColor": "#E6F4FE",
+  "foregroundImage": "./assets/images/android-icon-foreground.png",
+  "backgroundImage": "./assets/images/android-icon-background.png",
+  "monochromeImage": "./assets/images/android-icon-monochrome.png"
+},
+-->
+
+<!--
+react-native-toast-message
 # MAKE SURE TO USE THE SAME CONSISTENT SKY BLUE
 
 1. delete user account
@@ -138,7 +168,7 @@ onboarding.tsx
 useCategories.ts
 
 NOTE ALL THESE CREDENTIAL INCLUDE IN THE CUSTOM HOOKS, NEED TO BE SOLVED THE BETTER AUTH WAY
-NOTE THAT SHARE APP FEATURE THAT REQUIRES A ROUTE TO BE CALLED FOR ATTRIBUTION.
+NOTE THAT SHARE APP FEATURE THAT REQUIRES A ROUTE TO BE CALLED FOR ATTRIBUTION. ✅
 NOTE UPDATE ROUTES IN ALL FETCH HOOKS
 NOTE ALLOW USERS TO UPLOAD PROFILE IMAGE
 NOTE IMPLEMENT THE LOADING PAGE LIKE THE ERROR PAGE AND USE IT.
@@ -177,3 +207,14 @@ router.push({
 19. handle update comment to match the backend implementation
 20. handle delete comment to match the backend implementation
 21. handle comment reply properly, to match the backend implementation -->
+
+<!--
+Notification improvements
+🚀 Optional next step (highly recommended)
+
+If you want this to be bulletproof, next improvements:
+
+Store registered key in AsyncStorage (persist across app restarts)
+Add backend endpoint to delete token on logout
+Handle multiple devices per user
+ -->

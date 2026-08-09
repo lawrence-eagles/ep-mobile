@@ -14,7 +14,9 @@ export default function EmailVerified() {
   const params = useLocalSearchParams();
   const hasHandled = useRef(false);
 
-  const error = params?.error as string | undefined;
+  // const error = params?.error as string | undefined;
+  const errorParam = params?.error;
+  const error = Array.isArray(errorParam) ? errorParam[0] : errorParam;
 
   useEffect(() => {
     if (hasHandled.current) return;

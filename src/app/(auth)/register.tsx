@@ -1,5 +1,6 @@
 import { authClient } from "@/lib/auth-client";
 import { Image } from "expo-image";
+import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import {
@@ -44,6 +45,9 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
   const [loading, setLoading] = useState(false);
+  const callbackURL = Linking.createURL("/email-verified");
+
+  const image = "https://www.gravatar.com/avatar/?d=mp&s=200";
 
   const checks = useMemo(() => {
     return {
@@ -70,6 +74,8 @@ export default function Register() {
         email: result.data.email,
         password: result.data.password,
         name: result.data.name,
+        image, // User image URL (optional)
+        callbackURL,
       });
 
       if (error) {
