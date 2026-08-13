@@ -24,7 +24,7 @@ const VerifyDeleteAccount = () => {
    * inbox of every email provider. `mailto:` is the most reliable
    * cross-platform way to launch the device's configured email app.
    */
-  const handleGoToInbox = async (): Promise<void> => {
+  const handleGoToEmailApp = async (): Promise<void> => {
     if (loadingInbox) {
       return;
     }
@@ -139,9 +139,9 @@ const VerifyDeleteAccount = () => {
 
         {/* ACTIONS */}
         <View style={styles.actions}>
-          {/* GO TO INBOX */}
+          {/* GO TO EMAIL APP */}
           <Pressable
-            onPress={handleGoToInbox}
+            onPress={handleGoToEmailApp}
             disabled={loadingInbox}
             style={({ pressed }) => [
               styles.inboxButton,
@@ -149,7 +149,7 @@ const VerifyDeleteAccount = () => {
               loadingInbox && styles.buttonDisabled,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Go to inbox"
+            accessibilityLabel="Go to email app"
             accessibilityState={{ disabled: loadingInbox, busy: loadingInbox }}
           >
             {loadingInbox ? (
@@ -159,7 +159,7 @@ const VerifyDeleteAccount = () => {
                 accessibilityLabel="Opening email application"
               />
             ) : (
-              <Text style={styles.inboxButtonText}>Go to Inbox</Text>
+              <Text style={styles.inboxButtonText}>Open Email App</Text>
             )}
           </Pressable>
 

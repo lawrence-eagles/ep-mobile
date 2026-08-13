@@ -63,5 +63,5 @@ export const useRateApp = (
     } finally {
       setIsOpeningReview(false);
     }
-  }, [isOpeningReview]);
+  }, [isOpeningReview, setIsOpeningReview]);
 };

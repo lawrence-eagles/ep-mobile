@@ -2,7 +2,7 @@ import * as Linking from "expo-linking";
 import { useCallback } from "react";
 import { Alert } from "react-native";
 
-const TERMS_URL = "http://eaglespress.com/terms-and-condition";
+const TERMS_URL = "https://eaglespress.com/terms-and-condition";
 
 export const useHandleTermsAndCondition = () => {
   // ==========================================================

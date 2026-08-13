@@ -2,7 +2,7 @@ import * as Linking from "expo-linking";
 import { useCallback } from "react";
 import { Alert } from "react-native";
 
-const PRIVACY_POLICY_URL = "http://eaglespress.com/privacy-policy";
+const PRIVACY_POLICY_URL = "https://eaglespress.com/privacy-policy";
 
 export const useHandlePrivacyPolicy = () => {
   // ==========================================================

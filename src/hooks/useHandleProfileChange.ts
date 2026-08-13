@@ -33,6 +33,7 @@ export const useHandleChangeProfileImage = (
   // --------------------------------------------------------
 
   return useCallback(async () => {
+    // Prevent duplicate upload/picker operations.
     if (isUploadingImage) {
       return;
     }
@@ -81,7 +82,6 @@ export const useHandleChangeProfileImage = (
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.85,
-        selectionLimit: 1,
       });
 
       if (result.canceled || !result.assets?.[0]) {

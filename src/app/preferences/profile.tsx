@@ -8,10 +8,10 @@ import { useInitials } from "@/hooks/useInitials";
 import { useLogout } from "@/hooks/useLogout";
 import { useRateApp } from "@/hooks/useRateApp";
 import { shareApp } from "@/lib/shareApp";
-import { BlurView } from "expo-blur";
+import { BlurTargetView, BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import {
   Bookmark,
   Camera,
@@ -22,7 +22,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -57,19 +57,35 @@ const Profile = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isOpeningReview, setIsOpeningReview] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+
+  // ----------------------------------------------------------
+  // ANDROID BLUR TARGET
+  // ----------------------------------------------------------
+  //
+  // BlurTargetView provides the content that BlurView should
+  // capture and blur on Android.
+  //
+  const blurTargetRef = useRef<View | null>(null);
 
   const handleChangeProfileImage = useHandleChangeProfileImage(
     isUploadingImage,
     setIsUploadingImage,
   );
+
   const handleLogout = useLogout(isDeletingAccount);
+
   const handleDeleteAccount = useHandleDeleteAccount(
     isDeletingAccount,
     setIsDeletingAccount,
   );
+
   const handleRateUs = useRateApp(isOpeningReview, setIsOpeningReview);
+
   const handlePrivacyPolicy = useHandlePrivacyPolicy();
+
   const handleTerms = useHandleTermsAndCondition();
+
   const { displayName, initials } = useInitials();
 
   // ==========================================================
@@ -89,6 +105,10 @@ const Profile = () => {
   // ==========================================================
   // SESSION ERROR
   // ==========================================================
+
+  if (!sessionError && !user) {
+    return <Redirect href="/(auth)/login" />;
+  }
 
   if (sessionError || !user) {
     return (
@@ -135,83 +155,101 @@ const Profile = () => {
         {/* HERO / PROFILE HEADER */}
         {/* ================================================== */}
 
-        <LinearGradient
-          colors={["#087CFF", "#4E9DFF", "#DCEBFF", "#F8FAFC"]}
-          locations={[0, 0.38, 0.72, 1]}
-          style={styles.hero}
-        >
-          {/* Profile Image */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Change profile picture"
-            accessibilityHint="Opens your photo library so you can choose a new profile picture"
-            onPress={() => {
-              void handleChangeProfileImage();
-            }}
-            disabled={isUploadingImage}
-            style={({ pressed }) => [
-              styles.avatarPressable,
-              pressed && !isUploadingImage && styles.avatarPressed,
-            ]}
-          >
-            <View style={styles.avatarWrapper}>
-              {user.image ? (
-                <Image
-                  source={{ uri: user.image }}
-                  style={styles.avatar}
-                  contentFit="cover"
-                  transition={200}
-                  cachePolicy="memory-disk"
-                  onError={(error) => {
-                    console.warn("[profile] AVATAR IMAGE ERROR:", error);
-                  }}
-                />
-              ) : (
-                <View style={styles.initialsAvatar}>
-                  <Text style={styles.initialsText}>{initials}</Text>
-                </View>
-              )}
+        {/*
+          BlurTargetView captures the background content that
+          the settings-card BlurView will blur on Android.
 
-              <View style={styles.cameraButton}>
-                {isUploadingImage ? (
-                  <ActivityIndicator size="small" color="#1677FF" />
+          Keeping the hero inside the target also allows the
+          blurred card to visually pick up the gradient behind it.
+        */}
+        <BlurTargetView ref={blurTargetRef} style={styles.blurTarget}>
+          <LinearGradient
+            colors={["#087CFF", "#4E9DFF", "#DCEBFF", "#F8FAFC"]}
+            locations={[0, 0.38, 0.72, 1]}
+            style={styles.hero}
+          >
+            {/* Profile Image */}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Change profile picture"
+              accessibilityHint="Opens your photo library so you can choose a new profile picture"
+              onPress={() => {
+                void handleChangeProfileImage();
+              }}
+              disabled={isUploadingImage}
+              style={({ pressed }) => [
+                styles.avatarPressable,
+                pressed && !isUploadingImage && styles.avatarPressed,
+              ]}
+            >
+              <View style={styles.avatarWrapper}>
+                {user.image ? (
+                  <Image
+                    source={{ uri: user.image }}
+                    style={styles.avatar}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                    onError={(error) => {
+                      console.warn("[profile] AVATAR IMAGE ERROR:", error);
+                    }}
+                  />
                 ) : (
-                  <Camera size={25} color="#1677FF" strokeWidth={2.5} />
+                  <View style={styles.initialsAvatar}>
+                    <Text style={styles.initialsText}>{initials}</Text>
+                  </View>
                 )}
+
+                <View style={styles.cameraButton}>
+                  {isUploadingImage ? (
+                    <ActivityIndicator size="small" color="#1677FF" />
+                  ) : (
+                    <Camera size={25} color="#1677FF" strokeWidth={2.5} />
+                  )}
+                </View>
               </View>
-            </View>
-          </Pressable>
+            </Pressable>
 
-          {/* Name */}
-          <Text style={styles.userName} numberOfLines={1}>
-            {displayName}
-          </Text>
+            {/* Name */}
 
-          {/* Logout */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Log out"
-            onPress={() => {
-              void handleLogout();
-            }}
-            disabled={isDeletingAccount}
-            style={({ pressed }) => [
-              styles.logoutButton,
-              pressed && styles.logoutButtonPressed,
-            ]}
-          >
-            <LogOut size={30} color="#1677FF" strokeWidth={2} />
+            <Text style={styles.userName} numberOfLines={1}>
+              {displayName}
+            </Text>
 
-            <Text style={styles.logoutText}>Logout</Text>
-          </Pressable>
-        </LinearGradient>
+            {/* Logout */}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Log out"
+              onPress={() => {
+                void handleLogout();
+              }}
+              disabled={isDeletingAccount}
+              style={({ pressed }) => [
+                styles.logoutButton,
+                pressed && styles.logoutButtonPressed,
+              ]}
+            >
+              <LogOut size={30} color="#1677FF" strokeWidth={2} />
+
+              <Text style={styles.logoutText}>Logout</Text>
+            </Pressable>
+          </LinearGradient>
+        </BlurTargetView>
 
         {/* ================================================== */}
         {/* SETTINGS CARD */}
         {/* ================================================== */}
 
         <View style={styles.cardWrapper}>
-          <BlurView intensity={45} tint="light" style={styles.blurCard}>
+          <BlurView
+            intensity={45}
+            tint="light"
+            blurMethod="dimezisBlurView"
+            blurTarget={blurTargetRef}
+            style={styles.blurCard}
+          >
             <View style={styles.cardOverlay}>
               {/* BOOKMARKS */}
 
@@ -230,18 +268,36 @@ const Profile = () => {
               <ProfileRow
                 icon={<Share2 size={34} color="#111827" strokeWidth={1.9} />}
                 label="Share Eaglespress"
+                loading={isSharing}
                 onPress={async () => {
+                  if (isSharing) return;
+
                   try {
+                    setIsSharing(true);
+
                     const share = await shareApp("profile-detail");
+
+                    if (
+                      !share ||
+                      typeof share.shareId !== "string" ||
+                      !share.shareId.trim() ||
+                      typeof share.url !== "string" ||
+                      !share.url.trim()
+                    ) {
+                      throw new Error("Invalid share response");
+                    }
+
                     router.push({
                       pathname: "/share/app-screen",
                       params: {
-                        shareId: share?.shareId,
-                        url: share?.url,
+                        shareId: share.shareId,
+                        url: share.url,
                       },
                     });
                   } catch {
                     Alert.alert("Error", "Unable to create a share link");
+                  } finally {
+                    setIsSharing(false);
                   }
                 }}
               />
@@ -328,6 +384,14 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 30,
+  },
+
+  // ----------------------------------------------------------
+  // BLUR TARGET
+  // ----------------------------------------------------------
+
+  blurTarget: {
+    width: "100%",
   },
 
   // ----------------------------------------------------------
@@ -561,11 +625,14 @@ const styles = StyleSheet.create({
     borderRadius: 34,
     borderWidth: 1,
     borderColor: "rgba(229,231,235,0.85)",
-    backgroundColor: "rgba(255,255,255,0.88)",
+
+    // Reduced from 0.88 so the blur remains visible.
+    backgroundColor: "rgba(255,255,255,0.30)",
   },
 
   cardOverlay: {
-    backgroundColor: "rgba(255,255,255,0.66)",
+    // Reduced from 0.66 so the blurred background remains visible.
+    backgroundColor: "rgba(255,255,255,0.18)",
     paddingHorizontal: 24,
     paddingVertical: 8,
   },
