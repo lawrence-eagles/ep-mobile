@@ -1,8 +1,10 @@
 import { usePostDetail } from "@/hooks/usePostDetail";
+import { shareApp } from "@/lib/shareApp";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, Bookmark, Heart, MessageCircle } from "lucide-react-native";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,35 +17,26 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// ================= API =================
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
-
-// ================= SHARE APPS ==============
-async function shareApp(channel: string) {
-  const res = await fetch(`${API_URL}/app`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ channel }),
-  });
-
-  if (!res.ok) throw new Error("Share failed");
-  // return res.json();
-  const data = await res.json();
-  return data;
-}
-
 // ================= HELPERS =================
+
 function getSafeSlug(param: unknown): string | undefined {
   if (typeof param === "string") return param;
-  if (Array.isArray(param) && typeof param[0] === "string") return param[0];
+
+  if (Array.isArray(param) && typeof param[0] === "string") {
+    return param[0];
+  }
+
   return undefined;
 }
 
 async function safeOpenURL(url: string) {
   try {
     const supported = await Linking.canOpenURL(url);
-    if (!supported) throw new Error();
+
+    if (!supported) {
+      throw new Error("URL is not supported");
+    }
+
     await Linking.openURL(url);
   } catch {
     Alert.alert("Error", "Unable to open link");
@@ -51,29 +44,40 @@ async function safeOpenURL(url: string) {
 }
 
 // ================= SOCIAL SHARE =================
-function buildShareUrl(channel: string, url: string, title: string) {
+
+function buildShareUrl(
+  channel: string,
+  url: string,
+  title: string,
+): string | null {
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(title);
 
   switch (channel) {
     case "whatsapp":
       return `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+
     case "twitter":
       return `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+
     case "facebook":
       return `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+
     case "linkedin":
       return `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+
     default:
       return null;
   }
 }
 
 // ================= SCREEN =================
+
 export default function PostDetailScreen() {
+  const [isSharing, setIsSharing] = useState(false);
+
   const params = useLocalSearchParams();
 
-  // ✅ FIXED TYPE ERROR (no unknown)
   const slug = getSafeSlug(params.slug);
 
   const {
@@ -89,7 +93,49 @@ export default function PostDetailScreen() {
     isFollowPending,
   } = usePostDetail(slug ?? "");
 
-  // ================= SHARE =================
+  // ================= RECOMMEND APP =================
+
+  const handleRecommendApp = async () => {
+    // Prevent duplicate requests while the previous request
+    // is still creating a share record.
+    if (isSharing) {
+      return;
+    }
+
+    setIsSharing(true);
+
+    try {
+      const share = await shareApp("post-detail");
+
+      // Validate the backend response before navigating.
+      if (
+        !share ||
+        typeof share.shareId !== "string" ||
+        !share.shareId.trim() ||
+        typeof share.url !== "string" ||
+        !share.url.trim()
+      ) {
+        throw new Error("Invalid share response");
+      }
+
+      router.push({
+        pathname: "/share/app-screen",
+        params: {
+          shareId: share.shareId,
+          url: share.url,
+        },
+      });
+    } catch (error) {
+      console.error("[PostDetail] Recommend app error:", error);
+
+      Alert.alert("Error", "Unable to create a share link. Please try again.");
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  // ================= SOCIAL SHARE =================
+
   const handleShare = async (channel: string) => {
     if (!data?.sourceUrl) {
       Alert.alert("Error", "No URL available to share");
@@ -98,12 +144,16 @@ export default function PostDetailScreen() {
 
     const shareUrl = buildShareUrl(channel, data.sourceUrl, data.title ?? "");
 
-    if (!shareUrl) return;
+    if (!shareUrl) {
+      Alert.alert("Error", "Unsupported sharing channel");
+      return;
+    }
 
     await safeOpenURL(shareUrl);
   };
 
   // ================= STATES =================
+
   if (!slug) {
     return (
       <SafeAreaView style={styles.center}>
@@ -124,45 +174,56 @@ export default function PostDetailScreen() {
     return (
       <SafeAreaView style={styles.center}>
         <Text>Error loading post</Text>
+
         <Pressable onPress={() => refetch()}>
-          <Text style={{ color: "#007AFF", marginTop: 8 }}>Retry</Text>
+          <Text style={styles.retryText}>Retry</Text>
         </Pressable>
       </SafeAreaView>
     );
   }
 
   // ================= UI =================
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* HEADER */}
+
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
             <ArrowLeft size={24} />
           </Pressable>
 
           <Pressable
-            style={styles.recommendBtn}
-            onPress={async () => {
-              try {
-                const share = await shareApp("post-detail");
-                router.push({
-                  pathname: "/share/app-screen",
-                  params: {
-                    shareId: share?.shareId,
-                    url: share?.url,
-                  },
-                });
-              } catch {
-                Alert.alert("Error", "Unable to create a share link");
-              }
-            }}
+            style={[
+              styles.recommendBtn,
+              isSharing && styles.recommendBtnDisabled,
+            ]}
+            onPress={handleRecommendApp}
+            disabled={isSharing}
+            accessibilityRole="button"
+            accessibilityLabel="Recommend app"
+            accessibilityState={{ disabled: isSharing }}
           >
-            <Text style={styles.recommendText}>Recommend app</Text>
+            {isSharing ? (
+              <View style={styles.recommendContent}>
+                <ActivityIndicator size="small" color="#007AFF" />
+
+                <Text style={styles.recommendText}>Creating...</Text>
+              </View>
+            ) : (
+              <Text style={styles.recommendText}>Recommend app</Text>
+            )}
           </Pressable>
         </View>
 
         {/* IMAGE */}
+
         <View style={styles.imageWrapper}>
           <Image
             source={
@@ -173,12 +234,15 @@ export default function PostDetailScreen() {
             style={styles.image}
             contentFit="cover"
           />
+
           <BlurView intensity={20} style={styles.blurOverlay} />
         </View>
 
         {/* CONTENT */}
+
         <View style={styles.content}>
           {/* CATEGORY + FOLLOW */}
+
           <View style={styles.categoryRow}>
             <Text style={styles.category}>{data.category ?? "General"}</Text>
 
@@ -186,6 +250,15 @@ export default function PostDetailScreen() {
               style={styles.followBtn}
               onPress={toggleFollow}
               disabled={isFollowPending}
+              accessibilityRole="button"
+              accessibilityLabel={
+                data.isFollowingCategory
+                  ? "Unfollow category"
+                  : "Follow category"
+              }
+              accessibilityState={{
+                disabled: isFollowPending,
+              }}
             >
               <Text style={styles.followText}>
                 {data.isFollowingCategory ? "Following" : "Follow"}
@@ -194,32 +267,63 @@ export default function PostDetailScreen() {
           </View>
 
           {/* TITLE */}
+
           <Text style={styles.title}>{data.title}</Text>
 
           {/* META */}
+
           <View style={styles.metaRow}>
             <Text style={styles.meta}>{data.sourceName ?? "Unknown"}</Text>
 
             <View style={styles.actions}>
               {/* LIKE */}
-              <Pressable onPress={toggleLike} disabled={isLikePending}>
+
+              <Pressable
+                onPress={toggleLike}
+                disabled={isLikePending}
+                accessibilityRole="button"
+                accessibilityLabel={data.isLiked ? "Unlike post" : "Like post"}
+                accessibilityState={{
+                  disabled: isLikePending,
+                }}
+              >
                 <Heart size={22} color={data.isLiked ? "red" : "black"} />
               </Pressable>
+
               <Text>{data.likesCount ?? 0}</Text>
-              {/* COMMENT (FIXED) */}
+
+              {/* COMMENT */}
+
               <Pressable
                 onPress={() =>
                   router.push({
                     pathname: "/comments/comment-feed",
-                    params: { postId: data.id },
+                    params: {
+                      postId: data.id,
+                    },
                   })
                 }
+                accessibilityRole="button"
+                accessibilityLabel="View comments"
               >
                 <MessageCircle size={22} />
               </Pressable>
+
               <Text>{data.commentsCount ?? 0}</Text>
+
               {/* BOOKMARK */}
-              <Pressable onPress={toggleBookmark} disabled={isBookmarkPending}>
+
+              <Pressable
+                onPress={toggleBookmark}
+                disabled={isBookmarkPending}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  data.isBookmarked ? "Remove bookmark" : "Bookmark post"
+                }
+                accessibilityState={{
+                  disabled: isBookmarkPending,
+                }}
+              >
                 <Bookmark
                   size={22}
                   color={data.isBookmarked ? "black" : "gray"}
@@ -229,16 +333,22 @@ export default function PostDetailScreen() {
           </View>
 
           {/* SUMMARY */}
+
           <Text style={styles.summary}>{data.summary}</Text>
 
           {/* READ FULL */}
+
           <Pressable
             onPress={() => data.sourceUrl && safeOpenURL(data.sourceUrl)}
+            disabled={!data.sourceUrl}
+            accessibilityRole="link"
+            accessibilityLabel="Read full post"
           >
             <Text style={styles.readMore}>Read full post</Text>
           </Pressable>
 
           {/* SHARE */}
+
           <Text style={styles.shareTitle}>Share this post</Text>
 
           <View style={styles.shareRow}>
@@ -247,6 +357,8 @@ export default function PostDetailScreen() {
                 key={channel}
                 onPress={() => handleShare(channel)}
                 style={styles.shareBtn}
+                accessibilityRole="button"
+                accessibilityLabel={`Share on ${channel}`}
               >
                 <Text style={styles.shareText}>
                   {channel.charAt(0).toUpperCase() + channel.slice(1)}
@@ -261,13 +373,22 @@ export default function PostDetailScreen() {
 }
 
 // ================= STYLES =================
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
 
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+
+  retryText: {
+    color: "#007AFF",
+    marginTop: 8,
   },
 
   header: {
@@ -282,6 +403,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
+  },
+
+  recommendBtnDisabled: {
+    opacity: 0.6,
+  },
+
+  recommendContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
 
   recommendText: {

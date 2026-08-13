@@ -16,6 +16,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import Toast from "react-native-toast-message";
+import "react-native-url-polyfill/auto";
 import "../firebase-messaging"; // ✅ background handler
 
 // React Query client

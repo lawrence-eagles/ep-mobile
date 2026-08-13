@@ -130,6 +130,7 @@ Facebook svg --- https://cdn.jsdelivr.net/gh/devicons/devicon/icons/facebook/fac
 Envelop icon --- https://img.icons8.com/ios-filled/50/9ca3af/new-post.png
 Padlock icon --- https://img.icons8.com/ios-filled/50/9ca3af/lock-2.png
 Open-eye icon --- https://img.icons8.com/ios-filled/50/9ca3af/visible.png
+placeholder image --- https://www.gravatar.com/avatar/?d=mp&s=200
 
 the code above is my LoadingScreen.tsx code, update the code by implementing the ui of the image i uploaded. return a production ready LoadingScreen.tsx code. do not omit or miss anything.
 
@@ -176,6 +177,10 @@ NOTE UPLOAD A FALLBACK IMAGE FOR THE USER PROFILE IN FEED AND OTHER SCREENS
 NOTE CREATE THE PLACEHOLDER IMAGE FOR THE [SLUG].TSX SCREEN
 NOTE IN THE [SLUG].TSX SCREEN UPDATE THE CREDENTIAL INCLUDE IN THE SHAREAPP FUNCTION TO BETTER AUTH METHOD
 NOTE IMPLEMENT PUSH NOTIFICATION
+NOTE ADD SHARE POST FEATURE TO [SLUG].TSX
+NOTE ADD SHARE POST INCREMENTAL FEATURE TO [SLUG].TSX
+NOTE SEE IF YOU CAN ADD USEMEMO TO SCREENS THAT DO NOT HAVE IT
+NOTE UPDATE THE CONFIG/IMAGEKIT BACKEND URL
  -->
 
 <!-- 1. use expo image
@@ -218,3 +223,32 @@ Store registered key in AsyncStorage (persist across app restarts)
 Add backend endpoint to delete token on logout
 Handle multiple devices per user
  -->
+
+<!-- 1. use expo image
+2. use Pressable
+3. use typescript
+4. use SafeAreaView add edges={["top"]}
+5. Blur card background (expo-blur)
+6. Better icons (lucide-react-native)
+7. handle loading state
+8. use normal react native styles --- do not use tailwind css.
+9. note the issues raised by code rabbit in the UI you have built above and apply the improvements to avoid those issues.
+10. handle error and retry
+11. use imageKit for the image --- my imagekit sdk is already initialized and it is at lib/imageKit.ts
+12. when the profile image is clicked, the user should be allowed to choose an image for the profile image from their phone. And this should update the current user image in better auth. the better auth function to call is authClient.updateUser
+13. the Share Eaglespress should just be a Pressable the does nothing, i will implement this myself
+14. the bookmarks should link to /(tabs)/bookmarks
+15. the rate us should open the store review page
+16. the privacy policy should link to http://eaglespress.com/privacy-policy
+17. the terms & condition should link to http://eaglespress.com/terms-and-condition
+18. the delete account should the user account from better auth by calling the better auth function authClient.deleteUser
+
+return a complete production ready profile.tsx code. do not omit or miss anything.
+
+below is the better auth documentation for your reference:
+https://better-auth.com/docs/concepts/users-accounts#delete-user
+below is the imagekit documentation for your reference:
+https://imagekit.io/docs/integration/react-native#setting-up-imagekit-javascript-sdk
+
+ "typescript": "^5.9.3"
+-->
