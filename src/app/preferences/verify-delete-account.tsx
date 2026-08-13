@@ -139,7 +139,7 @@ const VerifyDeleteAccount = () => {
 
         {/* ACTIONS */}
         <View style={styles.actions}>
-          {/* GO TO EMAIL APP */}
+          {/* Open Email App */}
           <Pressable
             onPress={handleGoToEmailApp}
             disabled={loadingInbox}
@@ -149,14 +149,14 @@ const VerifyDeleteAccount = () => {
               loadingInbox && styles.buttonDisabled,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Go to email app"
+            accessibilityLabel="Open Email App"
             accessibilityState={{ disabled: loadingInbox, busy: loadingInbox }}
           >
             {loadingInbox ? (
               <ActivityIndicator
                 size="small"
                 color="#ffffff"
-                accessibilityLabel="Opening email application"
+                accessibilityLabel="Opening Email App"
               />
             ) : (
               <Text style={styles.inboxButtonText}>Open Email App</Text>
