@@ -1,7 +1,7 @@
 import { authClient } from "@/lib/auth-client";
 
 export function useAuth() {
-  const { data, isPending, error } = authClient.useSession();
+  const { data, isPending, error, refetch } = authClient.useSession();
 
   const user = data?.user ?? null;
 
@@ -11,5 +11,7 @@ export function useAuth() {
     isLoading: isPending,
     isError: !!error,
     error,
+    isPending,
+    refetch,
   };
 }

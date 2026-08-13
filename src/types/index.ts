@@ -59,3 +59,47 @@ export type commentFeedResponse = {
   nextCursor: string | null;
   hasMore: boolean;
 };
+
+// ============================================================
+// PROFILE TYPES
+// ============================================================
+
+export type ProfileUser = {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
+export type SessionData = {
+  user?: ProfileUser | null;
+};
+
+export type ImageKitUploadResponse = {
+  url?: string;
+  filePath?: string;
+  name?: string;
+};
+
+export type ImageKitUploadError = {
+  message?: string;
+};
+
+export type ImageKitClient = {
+  upload: (
+    options: {
+      file: string;
+      fileName: string;
+      token?: string;
+      expire?: number;
+      signature?: string;
+      folder?: string;
+      useUniqueFileName?: boolean;
+      responseFields?: string[];
+    },
+    callback: (
+      error: ImageKitUploadError | null,
+      result?: ImageKitUploadResponse,
+    ) => void,
+  ) => void;
+};

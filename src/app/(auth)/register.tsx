@@ -47,7 +47,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const callbackURL = Linking.createURL("/email-verified");
 
-  const image = "https://www.gravatar.com/avatar/?d=mp&s=200";
+  const image =
+    "https://ik.imagekit.io/xc7g6aws4f/user-profile-placeholder-image.jpg";
 
   const checks = useMemo(() => {
     return {

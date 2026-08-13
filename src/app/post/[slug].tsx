@@ -1,4 +1,5 @@
 import { usePostDetail } from "@/hooks/usePostDetail";
+import { shareApp } from "@/lib/shareApp";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
@@ -14,24 +15,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// ================= API =================
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
-
-// ================= SHARE APPS ==============
-async function shareApp(channel: string) {
-  const res = await fetch(`${API_URL}/app`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ channel }),
-  });
-
-  if (!res.ok) throw new Error("Share failed");
-  // return res.json();
-  const data = await res.json();
-  return data;
-}
 
 // ================= HELPERS =================
 function getSafeSlug(param: unknown): string | undefined {
