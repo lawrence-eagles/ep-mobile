@@ -30,7 +30,6 @@ const getErrorMessage = (err: unknown): string => {
 // HOOK
 // ==============================
 export const useCategories = () => {
-  const cookies = authClient.getCookie();
   // ✅ Track active requests per ID (count, not just membership)
   const [activeCounts, setActiveCounts] = useState<Map<string, number>>(
     new Map(),
@@ -90,6 +89,7 @@ export const useCategories = () => {
   // API FUNCTIONS
   // ==============================
   const fetchCategories = async (): Promise<Category[]> => {
+    const cookies = authClient.getCookie();
     const res = await fetch(`${API_BASE_URL}/api/v1/categories`, {
       headers: {
         ...(cookies ? { Cookie: cookies } : {}),
@@ -107,6 +107,7 @@ export const useCategories = () => {
   };
 
   const followCategory = async (categoryId: string) => {
+    const cookies = authClient.getCookie();
     const res = await fetch(`${API_BASE_URL}/api/v1/follows`, {
       method: "POST",
       headers: {
@@ -123,6 +124,7 @@ export const useCategories = () => {
   };
 
   const unfollowCategory = async (categoryId: string) => {
+    const cookies = authClient.getCookie();
     const res = await fetch(`${API_BASE_URL}/api/v1/follows/${categoryId}`, {
       method: "DELETE",
       headers: {

@@ -9,7 +9,6 @@ import {
 import { useCallback } from "react";
 
 export const useFollowingMutations = () => {
-  const cookies = authClient.getCookie();
   const queryClient = useQueryClient();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
@@ -53,6 +52,7 @@ export const useFollowingMutations = () => {
       const url = isLiked
         ? `${API_BASE_URL}/api/v1/likes/${postId}`
         : `${API_BASE_URL}/api/v1/likes`;
+      const cookies = authClient.getCookie();
       const res = await fetch(url, {
         method: isLiked ? "DELETE" : "POST",
         headers: {
@@ -111,6 +111,7 @@ export const useFollowingMutations = () => {
       const url = isBookmarked
         ? `${API_BASE_URL}/api/v1/bookmarks/${postId}`
         : `${API_BASE_URL}/api/v1/bookmarks`;
+      const cookies = authClient.getCookie();
       const res = await fetch(url, {
         method: isBookmarked ? "DELETE" : "POST",
         headers: {

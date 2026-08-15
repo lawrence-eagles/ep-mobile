@@ -4,7 +4,6 @@ import { FeedResponse } from "@/types";
 import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
 
 export const useFollowingInfiniteScroll = () => {
-  const cookies = authClient.getCookie();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
@@ -35,6 +34,7 @@ export const useFollowingInfiniteScroll = () => {
       url += `?cursor=${encodedCursor}`;
     }
 
+    const cookies = authClient.getCookie();
     const res = await fetch(url, {
       method: "GET",
       headers: {

@@ -167,16 +167,9 @@ export default function PostDetailScreen() {
         <ErrorScreen
           message={error?.message ?? "Error loading post"}
           onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading post"}
         />
       </SafeAreaView>
-
-      // <SafeAreaView style={styles.center}>
-      //   <Text>Error loading post</Text>
-
-      //   <Pressable onPress={() => refetch()}>
-      //     <Text style={styles.retryText}>Retry</Text>
-      //   </Pressable>
-      // </SafeAreaView>
     );
   }
 

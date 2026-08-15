@@ -274,3 +274,15 @@ const response = await fetch(`${API_BASE_URL}/share`, {
   }),
 });
 ```
+
+<!-- Error component extract
+return (
+ <SafeAreaView style={styles.center}>
+  <Text>Error loading post</Text>
+
+  <Pressable onPress={() => refetch()}>
+    <Text style={styles.retryText}>Retry</Text>
+  </Pressable>
+</SafeAreaView>
+)
+ -->

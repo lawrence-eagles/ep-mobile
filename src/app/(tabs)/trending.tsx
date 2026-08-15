@@ -95,6 +95,7 @@ export default function Trending() {
         <ErrorScreen
           message={error?.message ?? "Failed to load posts"}
           onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading posts"}
         />
       </SafeAreaView>
     );

@@ -198,25 +198,20 @@ export default function CommentScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ActivityIndicator style={{ marginTop: 50 }} />;
+        <ActivityIndicator style={{ marginTop: 50 }} />
       </SafeAreaView>
     );
   }
 
-  if (isError) {
+  if (isError && comments.length === 0) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
         <ErrorScreen
           message={error?.message ?? "Error loading comments"}
           onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading comments"}
         />
       </SafeAreaView>
-      // <View style={styles.center}>
-      //   <Text>Error loading comments</Text>
-      //   <Pressable onPress={() => refetch()}>
-      //     <Text>Retry</Text>
-      //   </Pressable>
-      // </View>
     );
   }
 

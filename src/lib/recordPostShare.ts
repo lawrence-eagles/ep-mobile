@@ -4,11 +4,11 @@ import { getEnv } from "@/lib/env";
 // ================= RECORD POST SHARE =================
 
 export const recordPostShare = async (postId: string): Promise<void> => {
-  const cookies = authClient.getCookie();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
   try {
+    const cookies = authClient.getCookie();
     const response = await fetch(`${API_BASE_URL}/api/v1/shares`, {
       method: "POST",
       headers: {

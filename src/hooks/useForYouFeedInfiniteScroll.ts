@@ -7,7 +7,6 @@ import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
 // HOOK
 // ==============================
 export const useForYouFeedInfiniteScroll = () => {
-  const cookies = authClient.getCookie();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
@@ -27,6 +26,8 @@ export const useForYouFeedInfiniteScroll = () => {
       const url = cursor
         ? `${API_BASE_URL}/api/v1/posts?cursor=${encodeURIComponent(cursor)}`
         : `${API_BASE_URL}/api/v1/posts`;
+
+      const cookies = authClient.getCookie();
 
       const res = await fetch(url, {
         headers: {

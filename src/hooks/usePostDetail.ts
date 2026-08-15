@@ -50,12 +50,19 @@ export const usePostDetail = (slug: string) => {
   };
 
   // ================= API =================
+  const fetchPost = (slug: string) => {
+    const cookies = authClient.getCookie();
 
-  const fetchPost = (slug: string) =>
-    fetchJSON<Post>(`${BACKEND_URL}/api/v1/single-post/${slug}`);
+    return fetchJSON<Post>(`${BACKEND_URL}/api/v1/single-post/${slug}`, {
+      headers: {
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+    });
+  };
 
-  const likePost = (postId: string) =>
-    fetchJSON(`${BACKEND_URL}/api/v1/likes`, {
+  const likePost = (postId: string) => {
+    const cookies = authClient.getCookie();
+    return fetchJSON(`${BACKEND_URL}/api/v1/likes`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -63,17 +70,21 @@ export const usePostDetail = (slug: string) => {
       },
       body: JSON.stringify({ postId }),
     });
+  };
 
-  const unlikePost = (postId: string) =>
-    fetchJSON(`${BACKEND_URL}/api/v1/likes/${postId}`, {
+  const unlikePost = (postId: string) => {
+    const cookies = authClient.getCookie();
+    return fetchJSON(`${BACKEND_URL}/api/v1/likes/${postId}`, {
       headers: {
         ...(cookies ? { Cookie: cookies } : {}),
       },
       method: "DELETE",
     });
+  };
 
-  const bookmarkPost = (postId: string) =>
-    fetchJSON(`${BACKEND_URL}/api/v1/bookmarks`, {
+  const bookmarkPost = (postId: string) => {
+    const cookies = authClient.getCookie();
+    return fetchJSON(`${BACKEND_URL}/api/v1/bookmarks`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -81,17 +92,21 @@ export const usePostDetail = (slug: string) => {
       },
       body: JSON.stringify({ postId }),
     });
+  };
 
-  const unbookmarkPost = (postId: string) =>
-    fetchJSON(`${BACKEND_URL}/api/v1/bookmarks/${postId}`, {
+  const unbookmarkPost = (postId: string) => {
+    const cookies = authClient.getCookie();
+    return fetchJSON(`${BACKEND_URL}/api/v1/bookmarks/${postId}`, {
       method: "DELETE",
       headers: {
         ...(cookies ? { Cookie: cookies } : {}),
       },
     });
+  };
 
-  const followCategory = (categoryId: string) =>
-    fetchJSON(`${BACKEND_URL}/api/v1/follows`, {
+  const followCategory = (categoryId: string) => {
+    const cookies = authClient.getCookie();
+    return fetchJSON(`${BACKEND_URL}/api/v1/follows`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -99,14 +114,17 @@ export const usePostDetail = (slug: string) => {
       },
       body: JSON.stringify({ categoryId }),
     });
+  };
 
-  const unfollowCategory = (categoryId: string) =>
-    fetchJSON(`${BACKEND_URL}/api/v1/follows/${categoryId}`, {
+  const unfollowCategory = (categoryId: string) => {
+    const cookies = authClient.getCookie();
+    return fetchJSON(`${BACKEND_URL}/api/v1/follows/${categoryId}`, {
       method: "DELETE",
       headers: {
         ...(cookies ? { Cookie: cookies } : {}),
       },
     });
+  };
 
   // ================= QUERY =================
 

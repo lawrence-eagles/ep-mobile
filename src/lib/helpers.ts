@@ -2,8 +2,12 @@
 
 import { Alert, Linking } from "react-native";
 
+// ================= SLUG HELPER =================
+
 export function getSafeSlug(param: unknown): string | undefined {
-  if (typeof param === "string") return param;
+  if (typeof param === "string") {
+    return param;
+  }
 
   if (Array.isArray(param) && typeof param[0] === "string") {
     return param[0];
@@ -12,7 +16,9 @@ export function getSafeSlug(param: unknown): string | undefined {
   return undefined;
 }
 
-export async function safeOpenURL(url: string) {
+// ================= SAFE URL OPENER =================
+
+export async function safeOpenURL(url: string): Promise<boolean> {
   try {
     const supported = await Linking.canOpenURL(url);
 
@@ -21,7 +27,13 @@ export async function safeOpenURL(url: string) {
     }
 
     await Linking.openURL(url);
-  } catch {
+
+    return true;
+  } catch (error: unknown) {
+    console.error("Failed to open URL:", error);
+
     Alert.alert("Error", "Unable to open link");
+
+    return false;
   }
 }

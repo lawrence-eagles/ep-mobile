@@ -198,6 +198,7 @@ const ForYouFeed = () => {
         <ErrorScreen
           message={error?.message ?? "Failed to load feed"}
           onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading posts"}
         />
       </SafeAreaView>
     );

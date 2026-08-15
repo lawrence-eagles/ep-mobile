@@ -14,7 +14,6 @@ interface FetchCommentsParams {
 // ================= HOOK =================
 
 export const useCommentsInfiniteScroll = (postId: string) => {
-  const cookies = authClient.getCookie();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
@@ -31,6 +30,7 @@ export const useCommentsInfiniteScroll = (postId: string) => {
       url.searchParams.append("cursor", pageParam);
     }
 
+    const cookies = authClient.getCookie();
     const res = await fetch(url.toString(), {
       method: "GET",
       signal,

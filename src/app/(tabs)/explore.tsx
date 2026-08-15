@@ -209,6 +209,7 @@ const Explore = () => {
         <ErrorScreen
           message={error?.message ?? "Failed to load posts"}
           onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading posts"}
         />
       );
     }

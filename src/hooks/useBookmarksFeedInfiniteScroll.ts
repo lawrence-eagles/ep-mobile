@@ -4,7 +4,6 @@ import { FeedResponse } from "@/types";
 import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
 
 export const useBookmarksFeedInfiniteScroll = () => {
-  const cookies = authClient.getCookie();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
@@ -26,6 +25,8 @@ export const useBookmarksFeedInfiniteScroll = () => {
     if (pageParam) {
       url += `?cursor=${encodeURIComponent(pageParam)}`;
     }
+
+    const cookies = authClient.getCookie();
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);

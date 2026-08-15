@@ -2,10 +2,10 @@ import { authClient } from "@/lib/auth-client";
 import { getEnv } from "../lib/env";
 
 const env = getEnv();
-const cookies = authClient.getCookie();
 
 // ================= SHARE APPS ==============
 export async function shareApp(channel: string) {
+  const cookies = authClient.getCookie();
   const res = await fetch(`${env.BACKEND_URL}/app`, {
     method: "POST",
     credentials: "omit",

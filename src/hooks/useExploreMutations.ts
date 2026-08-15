@@ -10,7 +10,6 @@ import {
 type ToggleType = "like" | "bookmark";
 
 export const useExploreMutations = () => {
-  const cookies = authClient.getCookie();
   const queryClient = useQueryClient();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
@@ -52,6 +51,7 @@ export const useExploreMutations = () => {
           }
         }
 
+        const cookies = authClient.getCookie();
         const res = await fetch(url, {
           method,
           headers: {

@@ -93,6 +93,7 @@ const Following = () => {
         <ErrorScreen
           message={error?.message ?? "Failed to load posts"}
           onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading posts"}
         />
       </SafeAreaView>
     );
@@ -197,7 +198,11 @@ const Following = () => {
         <Text style={styles.headerTitle}>Following</Text>
 
         {/* Replace with real user avatar */}
-        <Pressable onPress={() => router.push("/preferences/profile")}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open profile"
+          onPress={() => router.push("/preferences/profile")}
+        >
           <Image
             source={{
               uri:

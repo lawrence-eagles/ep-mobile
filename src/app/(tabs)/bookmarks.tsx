@@ -137,6 +137,7 @@ const Bookmarks = () => {
             error instanceof Error ? error.message : "Failed to load bookmarks"
           }
           onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading posts"}
         />
       </SafeAreaView>
     );
