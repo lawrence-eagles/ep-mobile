@@ -9,7 +9,7 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { Bookmark, Heart, MessageCircle } from "lucide-react-native";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -46,7 +46,10 @@ const ForYouFeed = () => {
 
   const { user } = useAuth();
 
-  const posts: Post[] = data?.pages.flatMap((p) => p.items) ?? [];
+  const posts: Post[] = useMemo(
+    () => data?.pages.flatMap((p) => p.items ?? []) ?? [],
+    [data],
+  );
 
   const isInitialError = isError && posts.length === 0;
 
@@ -218,7 +221,9 @@ const ForYouFeed = () => {
           >
             <Image
               source={{
-                uri: user?.image ?? "https://via.placeholder.com/150",
+                uri:
+                  user?.image ??
+                  "https://ik.imagekit.io/xc7g6aws4f/user-profile-placeholder-image.jpg?updatedAt=1786553603639",
               }}
               style={styles.avatar}
             />

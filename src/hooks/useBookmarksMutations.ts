@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { FeedResponse, Post } from "@/types";
 import {
@@ -8,6 +9,7 @@ import {
 import { useCallback } from "react";
 
 export const useBookmarksMutations = () => {
+  const cookies = authClient.getCookie();
   const queryClient = useQueryClient();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
@@ -70,11 +72,14 @@ export const useBookmarksMutations = () => {
 
   const likeMutation = useMutation({
     mutationFn: async (postId: string) => {
-      const res = await fetch(`${API_BASE_URL}/like`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/likes`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
         body: JSON.stringify({ postId }),
-        credentials: "include",
+        credentials: "omit",
       });
       await handleResponse(res);
     },
@@ -101,9 +106,12 @@ export const useBookmarksMutations = () => {
 
   const unlikeMutation = useMutation({
     mutationFn: async (postId: string) => {
-      const res = await fetch(`${API_BASE_URL}/like/${postId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/likes/${postId}`, {
         method: "DELETE",
-        credentials: "include",
+        headers: {
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        credentials: "omit",
       });
       await handleResponse(res);
     },
@@ -135,11 +143,14 @@ export const useBookmarksMutations = () => {
     { previousData?: InfiniteData<FeedResponse> }
   >({
     mutationFn: async (postId: string) => {
-      const res = await fetch(`${API_BASE_URL}/bookmark`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
         body: JSON.stringify({ postId }),
-        credentials: "include",
+        credentials: "omit",
       });
       await handleResponse(res);
     },
@@ -177,9 +188,12 @@ export const useBookmarksMutations = () => {
     { previousData?: InfiniteData<FeedResponse> }
   >({
     mutationFn: async (postId: string) => {
-      const res = await fetch(`${API_BASE_URL}/bookmark/${postId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks/${postId}`, {
         method: "DELETE",
-        credentials: "include",
+        headers: {
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        credentials: "omit",
       });
       await handleResponse(res);
     },

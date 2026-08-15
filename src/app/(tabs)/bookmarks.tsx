@@ -250,7 +250,7 @@ const Bookmarks = () => {
               uri:
                 typeof user?.image === "string"
                   ? user.image
-                  : "https://i.pravatar.cc/100",
+                  : "https://ik.imagekit.io/xc7g6aws4f/user-profile-placeholder-image.jpg?updatedAt=1786553603639",
             }}
             style={styles.avatar}
           />

@@ -1,8 +1,10 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { FeedResponse } from "@/types";
 import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
 
 export const useExploreFeedInfiniteScroll = (activeCategoryId?: string) => {
+  const cookies = authClient.getCookie();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
@@ -13,14 +15,17 @@ export const useExploreFeedInfiniteScroll = (activeCategoryId?: string) => {
     pageParam?: string | null;
     categoryId: string;
   }): Promise<FeedResponse> => {
-    const url = new URL(`${API_BASE_URL}/category-feed/${categoryId}`);
+    const url = new URL(`${API_BASE_URL}/api/v1/categories/${categoryId}`);
 
     if (pageParam) {
       url.searchParams.append("cursor", pageParam);
     }
 
     const res = await fetch(url.toString(), {
-      credentials: "include",
+      headers: {
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+      credentials: "omit",
     });
 
     if (!res.ok) {

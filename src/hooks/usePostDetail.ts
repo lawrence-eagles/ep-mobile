@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -23,6 +24,7 @@ interface Post {
 // ================= HOOK =================
 
 export const usePostDetail = (slug: string) => {
+  const cookies = authClient.getCookie();
   const queryClient = useQueryClient();
   const { BACKEND_URL } = getEnv();
 
@@ -35,7 +37,7 @@ export const usePostDetail = (slug: string) => {
     options?: RequestInit,
   ): Promise<T> => {
     const res = await fetch(url, {
-      credentials: "include",
+      credentials: "omit",
       ...options,
     });
 
@@ -50,47 +52,65 @@ export const usePostDetail = (slug: string) => {
   // ================= API =================
 
   const fetchPost = (slug: string) =>
-    fetchJSON<Post>(`${BACKEND_URL}/posts/${slug}`);
+    fetchJSON<Post>(`${BACKEND_URL}/api/v1/single-post/${slug}`);
 
   const likePost = (postId: string) =>
-    fetchJSON(`${BACKEND_URL}/like`, {
+    fetchJSON(`${BACKEND_URL}/api/v1/likes`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
       body: JSON.stringify({ postId }),
     });
 
   const unlikePost = (postId: string) =>
-    fetchJSON(`${BACKEND_URL}/unlike/${postId}`, {
+    fetchJSON(`${BACKEND_URL}/api/v1/likes/${postId}`, {
+      headers: {
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
       method: "DELETE",
     });
 
   const bookmarkPost = (postId: string) =>
-    fetchJSON(`${BACKEND_URL}/bookmark`, {
+    fetchJSON(`${BACKEND_URL}/api/v1/bookmarks`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
       body: JSON.stringify({ postId }),
     });
 
   const unbookmarkPost = (postId: string) =>
-    fetchJSON(`${BACKEND_URL}/unbookmark/${postId}`, {
+    fetchJSON(`${BACKEND_URL}/api/v1/bookmarks/${postId}`, {
       method: "DELETE",
+      headers: {
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
     });
 
   const followCategory = (categoryId: string) =>
-    fetchJSON(`${BACKEND_URL}/follow`, {
+    fetchJSON(`${BACKEND_URL}/api/v1/follows`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
       body: JSON.stringify({ categoryId }),
     });
 
   const unfollowCategory = (categoryId: string) =>
-    fetchJSON(`${BACKEND_URL}/unfollow/${categoryId}`, {
+    fetchJSON(`${BACKEND_URL}/api/v1/follows/${categoryId}`, {
       method: "DELETE",
+      headers: {
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
     });
 
   // ================= QUERY =================
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey,
     queryFn: () => fetchPost(slug),
     enabled: Boolean(slug),
@@ -260,6 +280,7 @@ export const usePostDetail = (slug: string) => {
     data,
     isLoading,
     isError,
+    error,
     refetch,
     isFetching,
 

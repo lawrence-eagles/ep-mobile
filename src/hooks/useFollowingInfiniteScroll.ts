@@ -1,8 +1,10 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { FeedResponse } from "@/types";
 import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
 
 export const useFollowingInfiniteScroll = () => {
+  const cookies = authClient.getCookie();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
@@ -26,7 +28,7 @@ export const useFollowingInfiniteScroll = () => {
   }: {
     pageParam: string | null;
   }): Promise<FeedResponse> {
-    let url = `${API_BASE_URL}/feed/following`;
+    let url = `${API_BASE_URL}/api/v1/posts/following`;
 
     if (pageParam) {
       const encodedCursor = encodeURIComponent(pageParam);
@@ -35,7 +37,10 @@ export const useFollowingInfiniteScroll = () => {
 
     const res = await fetch(url, {
       method: "GET",
-      credentials: "include",
+      headers: {
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+      credentials: "omit",
     });
 
     return handleResponse(res);

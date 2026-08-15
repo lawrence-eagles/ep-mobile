@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { Category } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,6 +30,7 @@ const getErrorMessage = (err: unknown): string => {
 // HOOK
 // ==============================
 export const useCategories = () => {
+  const cookies = authClient.getCookie();
   // ✅ Track active requests per ID (count, not just membership)
   const [activeCounts, setActiveCounts] = useState<Map<string, number>>(
     new Map(),
@@ -88,8 +90,11 @@ export const useCategories = () => {
   // API FUNCTIONS
   // ==============================
   const fetchCategories = async (): Promise<Category[]> => {
-    const res = await fetch(`${API_BASE_URL}/categories`, {
-      credentials: "include",
+    const res = await fetch(`${API_BASE_URL}/api/v1/categories`, {
+      headers: {
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+      credentials: "omit",
     });
 
     if (!res.ok) throw new Error("Failed to fetch categories");
@@ -102,10 +107,13 @@ export const useCategories = () => {
   };
 
   const followCategory = async (categoryId: string) => {
-    const res = await fetch(`${API_BASE_URL}/follow`, {
+    const res = await fetch(`${API_BASE_URL}/api/v1/follows`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+      credentials: "omit",
       body: JSON.stringify({ categoryId }),
     });
 
@@ -115,9 +123,12 @@ export const useCategories = () => {
   };
 
   const unfollowCategory = async (categoryId: string) => {
-    const res = await fetch(`${API_BASE_URL}/unfollow/${categoryId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/v1/follows/${categoryId}`, {
       method: "DELETE",
-      credentials: "include",
+      headers: {
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+      credentials: "omit",
     });
 
     if (!res.ok) throw new Error("Unfollow failed");

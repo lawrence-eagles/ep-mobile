@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { FeedResponse, Post } from "@/types";
 import {
@@ -8,6 +9,7 @@ import {
 import { useCallback } from "react";
 
 export const useFollowingMutations = () => {
+  const cookies = authClient.getCookie();
   const queryClient = useQueryClient();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
@@ -48,13 +50,18 @@ export const useFollowingMutations = () => {
       postId: string;
       isLiked: boolean;
     }) => {
-      const res = await fetch(
-        `${API_BASE_URL}/${isLiked ? "unlike" : "like"}/${postId}`,
-        {
-          method: isLiked ? "DELETE" : "POST",
-          credentials: "include",
+      const url = isLiked
+        ? `${API_BASE_URL}/api/v1/likes/${postId}`
+        : `${API_BASE_URL}/api/v1/likes`;
+      const res = await fetch(url, {
+        method: isLiked ? "DELETE" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookies ? { Cookie: cookies } : {}),
         },
-      );
+        credentials: "omit",
+        body: isLiked ? undefined : JSON.stringify({ postId }),
+      });
       return handleResponse(res);
     },
 
@@ -101,9 +108,17 @@ export const useFollowingMutations = () => {
       postId: string;
       isBookmarked: boolean;
     }) => {
-      const res = await fetch(`${API_BASE_URL}/bookmark/${postId}`, {
+      const url = isBookmarked
+        ? `${API_BASE_URL}/api/v1/bookmarks/${postId}`
+        : `${API_BASE_URL}/api/v1/bookmarks`;
+      const res = await fetch(url, {
         method: isBookmarked ? "DELETE" : "POST",
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        credentials: "omit",
+        body: isBookmarked ? undefined : JSON.stringify({ postId }),
       });
       return handleResponse(res);
     },

@@ -114,7 +114,7 @@ react-native-toast-message
 1. download those icons gotten from online and use them in the expo image ✅
 2. in the forgot password screen check the back arrow to make sure you use the correct icon -- the fix is in rest password use ionicons ✅
 3. make sure the forgot password envelop image shown on success and the text is styled correctly.
-4. make sure all expo images are linked correctly
+4. make sure all expo images are linked correctly ✅
 5. cross check the open eye close eye implementation in login, register and other forms. ✅
 6. check the forgot password back button to make sure the style is ok ✅
 7. check the reset password wave and password eyes ✅
@@ -168,19 +168,23 @@ ForYouFeed index.tsx code
 onboarding.tsx
 useCategories.ts
 
-NOTE ALL THESE CREDENTIAL INCLUDE IN THE CUSTOM HOOKS, NEED TO BE SOLVED THE BETTER AUTH WAY
+NOTE ALL THESE CREDENTIAL INCLUDE IN THE CUSTOM HOOKS, NEED TO BE SOLVED THE BETTER AUTH WAY ✅
 NOTE THAT SHARE APP FEATURE THAT REQUIRES A ROUTE TO BE CALLED FOR ATTRIBUTION. ✅
-NOTE UPDATE ROUTES IN ALL FETCH HOOKS
-NOTE ALLOW USERS TO UPLOAD PROFILE IMAGE
-NOTE IMPLEMENT THE LOADING PAGE LIKE THE ERROR PAGE AND USE IT.
-NOTE UPLOAD A FALLBACK IMAGE FOR THE USER PROFILE IN FEED AND OTHER SCREENS
-NOTE CREATE THE PLACEHOLDER IMAGE FOR THE [SLUG].TSX SCREEN
-NOTE IN THE [SLUG].TSX SCREEN UPDATE THE CREDENTIAL INCLUDE IN THE SHAREAPP FUNCTION TO BETTER AUTH METHOD
-NOTE IMPLEMENT PUSH NOTIFICATION
-NOTE ADD SHARE POST FEATURE TO [SLUG].TSX
-NOTE ADD SHARE POST INCREMENTAL FEATURE TO [SLUG].TSX
-NOTE SEE IF YOU CAN ADD USEMEMO TO SCREENS THAT DO NOT HAVE IT
-NOTE UPDATE THE CONFIG/IMAGEKIT BACKEND URL
+NOTE UPDATE ROUTES IN ALL FETCH HOOKS ✅
+NOTE ALLOW USERS TO UPLOAD PROFILE IMAGE ✅
+NOTE IMPLEMENT THE LOADING PAGE LIKE THE ERROR PAGE AND USE IT. ✅
+NOTE UPLOAD A FALLBACK IMAGE FOR THE USER PROFILE IN FEED AND OTHER SCREENS ✅
+NOTE CREATE THE PLACEHOLDER IMAGE FOR THE [SLUG].TSX SCREEN ✅
+NOTE IN THE [SLUG].TSX SCREEN UPDATE THE CREDENTIAL INCLUDE IN THE SHAREAPP FUNCTION TO BETTER AUTH METHOD ✅
+NOTE IMPLEMENT PUSH NOTIFICATION ✅
+NOTE ADD SHARE POST FEATURE TO [SLUG].TSX ✅
+NOTE ADD SHARE POST INCREMENTAL FEATURE TO [SLUG].TSX ✅
+NOTE SEE IF YOU CAN ADD USEMEMO TO SCREENS THAT DO NOT HAVE IT ✅
+NOTE UPDATE THE CONFIG/IMAGEKIT BACKEND URL ✅
+NOTE SEED CATEGORIES INTO THE DB
+NOTE UPDATE ENVIRONMENT VARIABLES AND KEYS WHERE NEEDED
+NOTE CONFIRM THAT YOUR ERROR AND ERROR COMPONENT USAGE IN THE [SLUG].TSX IS CORRECT
+NOTE CONFIRM THAT YOUR ERROR AND ERROR COMPONENT USAGE IN COMMENTS FEED.TSX IS CORRECT
  -->
 
 <!-- 1. use expo image
@@ -252,3 +256,21 @@ https://imagekit.io/docs/integration/react-native#setting-up-imagekit-javascript
 
  "typescript": "^5.9.3"
 -->
+
+### chatgpt suggestion
+
+```js
+const cookies = authClient.getCookie();
+
+const response = await fetch(`${API_BASE_URL}/share`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    ...(cookies ? { Cookie: cookies } : {}),
+  },
+  credentials: "omit",
+  body: JSON.stringify({
+    postId,
+  }),
+});
+```

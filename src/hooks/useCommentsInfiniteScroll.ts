@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { commentFeedResponse } from "@/types";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -13,6 +14,7 @@ interface FetchCommentsParams {
 // ================= HOOK =================
 
 export const useCommentsInfiniteScroll = (postId: string) => {
+  const cookies = authClient.getCookie();
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
 
@@ -23,7 +25,7 @@ export const useCommentsInfiniteScroll = (postId: string) => {
     postId,
     signal,
   }: FetchCommentsParams): Promise<commentFeedResponse> => {
-    const url = new URL(`${API_BASE_URL}/comments/${postId}`);
+    const url = new URL(`${API_BASE_URL}/api/v1/comments/${postId}`);
 
     if (pageParam) {
       url.searchParams.append("cursor", pageParam);
@@ -33,8 +35,9 @@ export const useCommentsInfiniteScroll = (postId: string) => {
       method: "GET",
       signal,
       headers: {
-        "Content-Type": "application/json",
+        ...(cookies ? { Cookie: cookies } : {}),
       },
+      credentials: "omit",
     });
 
     if (!res.ok) {
