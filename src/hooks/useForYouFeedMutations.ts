@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { FeedResponse, Post } from "@/types";
 import {
@@ -49,10 +50,14 @@ export const useForYouFeedMutations = () => {
   // ==============================
   const likeMutation = useMutation<void, Error, string, Ctx>({
     mutationFn: async (postId) => {
-      const res = await fetch(`${API_BASE_URL}/like`, {
+      const cookies = authClient.getCookie();
+      const res = await fetch(`${API_BASE_URL}/api/v1/likes`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        credentials: "omit",
         body: JSON.stringify({ postId }),
       });
 
@@ -101,9 +106,13 @@ export const useForYouFeedMutations = () => {
   // ==============================
   const unlikeMutation = useMutation<void, Error, string, Ctx>({
     mutationFn: async (postId) => {
-      const res = await fetch(`${API_BASE_URL}/unlike/${postId}`, {
+      const cookies = authClient.getCookie();
+      const res = await fetch(`${API_BASE_URL}/api/v1/likes/${postId}`, {
         method: "DELETE",
-        credentials: "include",
+        headers: {
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        credentials: "omit",
       });
 
       if (!res.ok) throw new Error("Unlike failed");
@@ -151,10 +160,14 @@ export const useForYouFeedMutations = () => {
   // ==============================
   const bookmarkMutation = useMutation<void, Error, string, Ctx>({
     mutationFn: async (postId) => {
-      const res = await fetch(`${API_BASE_URL}/bookmark`, {
+      const cookies = authClient.getCookie();
+      const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        credentials: "omit",
         body: JSON.stringify({ postId }),
       });
 
@@ -195,9 +208,13 @@ export const useForYouFeedMutations = () => {
   // ==============================
   const unbookmarkMutation = useMutation<void, Error, string, Ctx>({
     mutationFn: async (postId) => {
-      const res = await fetch(`${API_BASE_URL}/unbookmark/${postId}`, {
+      const cookies = authClient.getCookie();
+      const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks/${postId}`, {
         method: "DELETE",
-        credentials: "include",
+        headers: {
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        credentials: "omit",
       });
 
       if (!res.ok) throw new Error("Unbookmark failed");

@@ -93,6 +93,7 @@ const Following = () => {
         <ErrorScreen
           message={error?.message ?? "Failed to load posts"}
           onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading posts"}
         />
       </SafeAreaView>
     );
@@ -197,12 +198,20 @@ const Following = () => {
         <Text style={styles.headerTitle}>Following</Text>
 
         {/* Replace with real user avatar */}
-        <Image
-          source={{
-            uri: user?.image ?? "https://i.pravatar.cc/100",
-          }}
-          style={styles.avatar}
-        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open profile"
+          onPress={() => router.push("/preferences/profile")}
+        >
+          <Image
+            source={{
+              uri:
+                user?.image ??
+                "https://ik.imagekit.io/xc7g6aws4f/user-profile-placeholder-image.jpg?updatedAt=1786553603639",
+            }}
+            style={styles.avatar}
+          />
+        </Pressable>
       </View>
 
       <FlatList

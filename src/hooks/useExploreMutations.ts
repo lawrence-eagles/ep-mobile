@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { FeedResponse } from "@/types";
 import {
@@ -31,29 +32,33 @@ export const useExploreMutations = () => {
         if (type === "like") {
           if (isActive) {
             // UNLIKE
-            url = `${API_BASE_URL}/like/${postId}`;
+            url = `${API_BASE_URL}/api/v1/likes/${postId}`;
             method = "DELETE";
           } else {
             // LIKE
-            url = `${API_BASE_URL}/like`;
+            url = `${API_BASE_URL}/api/v1/likes`;
             method = "POST";
           }
         } else {
           if (isActive) {
             // UNBOOKMARK
-            url = `${API_BASE_URL}/bookmark/${postId}`;
+            url = `${API_BASE_URL}/api/v1/bookmarks/${postId}`;
             method = "DELETE";
           } else {
             // BOOKMARK
-            url = `${API_BASE_URL}/bookmark`;
+            url = `${API_BASE_URL}/api/v1/bookmarks`;
             method = "POST";
           }
         }
 
+        const cookies = authClient.getCookie();
         const res = await fetch(url, {
           method,
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...(cookies ? { Cookie: cookies } : {}),
+          },
+          credentials: "omit",
           body: method === "POST" ? JSON.stringify({ postId }) : undefined,
         });
 

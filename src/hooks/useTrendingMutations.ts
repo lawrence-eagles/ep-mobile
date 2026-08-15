@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { FeedResponse, Post } from "@/types";
 import {
@@ -25,10 +26,14 @@ export const useTrendingMutations = () => {
   };
 
   async function likePost(postId: string) {
-    const res = await fetch(`${API_BASE_URL}/like`, {
+    const cookies = authClient.getCookie();
+    const res = await fetch(`${API_BASE_URL}/api/v1/likes`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+      credentials: "omit",
       body: JSON.stringify({ postId }),
     });
 
@@ -36,19 +41,27 @@ export const useTrendingMutations = () => {
   }
 
   async function unlikePost(postId: string) {
-    const res = await fetch(`${API_BASE_URL}/unlike/${postId}`, {
+    const cookies = authClient.getCookie();
+    const res = await fetch(`${API_BASE_URL}/api/v1/likes/${postId}`, {
       method: "DELETE",
-      credentials: "include",
+      headers: {
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+      credentials: "omit",
     });
 
     return handleResponse(res);
   }
 
   async function bookmarkPost(postId: string) {
-    const res = await fetch(`${API_BASE_URL}/bookmark`, {
+    const cookies = authClient.getCookie();
+    const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+      credentials: "omit",
       body: JSON.stringify({ postId }),
     });
 
@@ -56,9 +69,13 @@ export const useTrendingMutations = () => {
   }
 
   async function unbookmarkPost(postId: string) {
-    const res = await fetch(`${API_BASE_URL}/bookmark/${postId}`, {
+    const cookies = authClient.getCookie();
+    const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks/${postId}`, {
       method: "DELETE",
-      credentials: "include",
+      headers: {
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+      credentials: "omit",
     });
 
     return handleResponse(res);

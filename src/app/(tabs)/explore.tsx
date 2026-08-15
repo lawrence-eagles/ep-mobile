@@ -71,7 +71,10 @@ const Explore = () => {
     isFetchNextPageError,
   } = useExploreFeedInfiniteScroll(activeCategoryId);
 
-  const posts: Post[] = data?.pages.flatMap((p) => p.items) ?? [];
+  const posts: Post[] = useMemo(
+    () => data?.pages.flatMap((p) => p.items ?? []) ?? [],
+    [data],
+  );
 
   // ==============================
   // MUTATIONS
@@ -206,6 +209,7 @@ const Explore = () => {
         <ErrorScreen
           message={error?.message ?? "Failed to load posts"}
           onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading posts"}
         />
       );
     }
@@ -254,7 +258,9 @@ const Explore = () => {
           <Pressable onPress={() => router.push("/preferences/profile")}>
             <Image
               source={{
-                uri: user?.image ?? "https://via.placeholder.com/150",
+                uri:
+                  user?.image ??
+                  "https://ik.imagekit.io/xc7g6aws4f/user-profile-placeholder-image.jpg?updatedAt=1786553603639",
               }}
               style={styles.avatar}
             />

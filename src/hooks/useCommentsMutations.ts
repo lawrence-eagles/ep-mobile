@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { commentFeedResponse } from "@/types";
 import {
@@ -71,11 +72,14 @@ export const useCommentsMutations = (postId: string) => {
 
   const likeMutation = useMutation<void, Error, string, MutationContext>({
     mutationFn: async (commentId) => {
-      const res = await fetch(`${API_BASE_URL}/comments/like`, {
+      const cookies = authClient.getCookie();
+      const res = await fetch(`${API_BASE_URL}/api/v1/comment-likes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(cookies ? { Cookie: cookies } : {}),
         },
+        credentials: "omit",
         body: JSON.stringify({ commentId }),
       });
 
@@ -115,9 +119,17 @@ export const useCommentsMutations = (postId: string) => {
 
   const unlikeMutation = useMutation<void, Error, string, MutationContext>({
     mutationFn: async (commentId) => {
-      const res = await fetch(`${API_BASE_URL}/comments/unlike/${commentId}`, {
-        method: "DELETE",
-      });
+      const cookies = authClient.getCookie();
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/comment-likes/${commentId}`,
+        {
+          method: "DELETE",
+          headers: {
+            ...(cookies ? { Cookie: cookies } : {}),
+          },
+          credentials: "omit",
+        },
+      );
 
       if (!res.ok) {
         throw new Error("Failed to unlike comment");

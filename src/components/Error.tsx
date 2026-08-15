@@ -5,9 +5,11 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 const ErrorScreen = ({
   message,
   onRetry,
+  retryAccessibilityLabel,
 }: {
   message: string;
   onRetry: () => void;
+  retryAccessibilityLabel: string;
 }) => {
   const router = useRouter();
 
@@ -45,7 +47,7 @@ const ErrorScreen = ({
         style={styles.primaryButton}
         onPress={onRetry}
         accessibilityRole="button"
-        accessibilityLabel="Retry loading posts"
+        accessibilityLabel={retryAccessibilityLabel}
       >
         <Text style={styles.primaryButtonText}>Try Again</Text>
       </Pressable>

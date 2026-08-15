@@ -1,4 +1,8 @@
+import ErrorScreen from "@/components/Error";
 import { usePostDetail } from "@/hooks/usePostDetail";
+import { buildShareUrl } from "@/lib/buildShareUrl";
+import { getSafeSlug, safeOpenURL } from "@/lib/helpers";
+import { recordPostShare } from "@/lib/recordPostShare";
 import { shareApp } from "@/lib/shareApp";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
@@ -8,7 +12,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,64 +20,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// ================= HELPERS =================
+// ================= TYPES =================
 
-function getSafeSlug(param: unknown): string | undefined {
-  if (typeof param === "string") return param;
-
-  if (Array.isArray(param) && typeof param[0] === "string") {
-    return param[0];
-  }
-
-  return undefined;
-}
-
-async function safeOpenURL(url: string) {
-  try {
-    const supported = await Linking.canOpenURL(url);
-
-    if (!supported) {
-      throw new Error("URL is not supported");
-    }
-
-    await Linking.openURL(url);
-  } catch {
-    Alert.alert("Error", "Unable to open link");
-  }
-}
-
-// ================= SOCIAL SHARE =================
-
-function buildShareUrl(
-  channel: string,
-  url: string,
-  title: string,
-): string | null {
-  const encodedUrl = encodeURIComponent(url);
-  const encodedText = encodeURIComponent(title);
-
-  switch (channel) {
-    case "whatsapp":
-      return `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
-
-    case "twitter":
-      return `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
-
-    case "facebook":
-      return `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-
-    case "linkedin":
-      return `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
-
-    default:
-      return null;
-  }
-}
+type SocialChannel = "whatsapp" | "twitter" | "facebook" | "linkedin";
 
 // ================= SCREEN =================
 
 export default function PostDetailScreen() {
   const [isSharing, setIsSharing] = useState(false);
+  const [isCreatingAppShare, setIsCreatingAppShare] = useState(false);
 
   const params = useLocalSearchParams();
 
@@ -84,6 +38,7 @@ export default function PostDetailScreen() {
     data,
     isLoading,
     isError,
+    error,
     refetch,
     toggleLike,
     toggleBookmark,
@@ -96,13 +51,12 @@ export default function PostDetailScreen() {
   // ================= RECOMMEND APP =================
 
   const handleRecommendApp = async () => {
-    // Prevent duplicate requests while the previous request
-    // is still creating a share record.
-    if (isSharing) {
+    // Prevent duplicate requests while the share link is being created.
+    if (isCreatingAppShare) {
       return;
     }
 
-    setIsSharing(true);
+    setIsCreatingAppShare(true);
 
     try {
       const share = await shareApp("post-detail");
@@ -130,14 +84,24 @@ export default function PostDetailScreen() {
 
       Alert.alert("Error", "Unable to create a share link. Please try again.");
     } finally {
-      setIsSharing(false);
+      setIsCreatingAppShare(false);
     }
   };
 
   // ================= SOCIAL SHARE =================
 
-  const handleShare = async (channel: string) => {
-    if (!data?.sourceUrl) {
+  const handleShare = async (channel: SocialChannel) => {
+    // Prevent multiple share requests from being started at once.
+    if (isSharing) {
+      return;
+    }
+
+    if (!data?.id) {
+      Alert.alert("Error", "Unable to identify this post");
+      return;
+    }
+
+    if (!data.sourceUrl) {
       Alert.alert("Error", "No URL available to share");
       return;
     }
@@ -149,7 +113,34 @@ export default function PostDetailScreen() {
       return;
     }
 
-    await safeOpenURL(shareUrl);
+    setIsSharing(true);
+
+    try {
+      /*
+       * safeOpenURL() only completes successfully when the external
+       * share URL can be opened. If opening fails, recordPostShare()
+       * is not called.
+       */
+      await safeOpenURL(shareUrl);
+
+      /*
+       * The external share flow was successfully opened.
+       *
+       * We cannot know whether the user actually pressed "Send"
+       * inside the social-media application. Therefore this records
+       * the successful handoff to the social sharing flow.
+       */
+      await recordPostShare(data.id);
+    } catch (error) {
+      console.error("[PostDetail] Social share error:", error);
+
+      Alert.alert(
+        "Unable to Share",
+        "We couldn't open the selected sharing application. Please try again.",
+      );
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   // ================= STATES =================
@@ -173,11 +164,11 @@ export default function PostDetailScreen() {
   if (isError || !data) {
     return (
       <SafeAreaView style={styles.center}>
-        <Text>Error loading post</Text>
-
-        <Pressable onPress={() => refetch()}>
-          <Text style={styles.retryText}>Retry</Text>
-        </Pressable>
+        <ErrorScreen
+          message={error?.message ?? "Error loading post"}
+          onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading post"}
+        />
       </SafeAreaView>
     );
   }
@@ -202,19 +193,22 @@ export default function PostDetailScreen() {
           <Pressable
             style={[
               styles.recommendBtn,
-              isSharing && styles.recommendBtnDisabled,
+              isCreatingAppShare && styles.recommendBtnDisabled,
             ]}
             onPress={handleRecommendApp}
-            disabled={isSharing}
+            disabled={isCreatingAppShare}
             accessibilityRole="button"
             accessibilityLabel="Recommend app"
-            accessibilityState={{ disabled: isSharing }}
+            accessibilityState={{
+              disabled: isCreatingAppShare,
+              busy: isCreatingAppShare,
+            }}
           >
-            {isSharing ? (
+            {isCreatingAppShare ? (
               <View style={styles.recommendContent}>
                 <ActivityIndicator size="small" color="#007AFF" />
 
-                <Text style={styles.recommendText}>Creating...</Text>
+                <Text style={styles.recommendText}>Creating App share...</Text>
               </View>
             ) : (
               <Text style={styles.recommendText}>Recommend app</Text>
@@ -258,6 +252,7 @@ export default function PostDetailScreen() {
               }
               accessibilityState={{
                 disabled: isFollowPending,
+                busy: isFollowPending,
               }}
             >
               <Text style={styles.followText}>
@@ -285,6 +280,8 @@ export default function PostDetailScreen() {
                 accessibilityLabel={data.isLiked ? "Unlike post" : "Like post"}
                 accessibilityState={{
                   disabled: isLikePending,
+                  selected: data.isLiked,
+                  busy: isLikePending,
                 }}
               >
                 <Heart size={22} color={data.isLiked ? "red" : "black"} />
@@ -322,6 +319,8 @@ export default function PostDetailScreen() {
                 }
                 accessibilityState={{
                   disabled: isBookmarkPending,
+                  selected: data.isBookmarked,
+                  busy: isBookmarkPending,
                 }}
               >
                 <Bookmark
@@ -343,6 +342,9 @@ export default function PostDetailScreen() {
             disabled={!data.sourceUrl}
             accessibilityRole="link"
             accessibilityLabel="Read full post"
+            accessibilityState={{
+              disabled: !data.sourceUrl,
+            }}
           >
             <Text style={styles.readMore}>Read full post</Text>
           </Pressable>
@@ -352,13 +354,22 @@ export default function PostDetailScreen() {
           <Text style={styles.shareTitle}>Share this post</Text>
 
           <View style={styles.shareRow}>
-            {["whatsapp", "twitter", "facebook", "linkedin"].map((channel) => (
+            {(
+              ["whatsapp", "twitter", "facebook", "linkedin"] as SocialChannel[]
+            ).map((channel) => (
               <Pressable
                 key={channel}
-                onPress={() => handleShare(channel)}
-                style={styles.shareBtn}
+                onPress={() => {
+                  void handleShare(channel);
+                }}
+                disabled={isSharing}
+                style={[styles.shareBtn, isSharing && styles.shareBtnDisabled]}
                 accessibilityRole="button"
                 accessibilityLabel={`Share on ${channel}`}
+                accessibilityState={{
+                  disabled: isSharing,
+                  busy: isSharing,
+                }}
               >
                 <Text style={styles.shareText}>
                   {channel.charAt(0).toUpperCase() + channel.slice(1)}
@@ -366,6 +377,13 @@ export default function PostDetailScreen() {
               </Pressable>
             ))}
           </View>
+
+          {isSharing ? (
+            <View style={styles.shareLoading}>
+              <ActivityIndicator size="small" color="#007AFF" />
+              <Text style={styles.shareLoadingText}>Opening share...</Text>
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -516,7 +534,23 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
 
+  shareBtnDisabled: {
+    opacity: 0.5,
+  },
+
   shareText: {
+    fontSize: 13,
+  },
+
+  shareLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+  },
+
+  shareLoadingText: {
+    color: "#666",
     fontSize: 13,
   },
 });

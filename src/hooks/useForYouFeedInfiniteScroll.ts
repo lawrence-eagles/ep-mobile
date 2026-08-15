@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { FeedResponse } from "@/types";
 import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
@@ -23,10 +24,17 @@ export const useForYouFeedInfiniteScroll = () => {
       const cursor = pageParam;
 
       const url = cursor
-        ? `${API_BASE_URL}/feed?cursor=${encodeURIComponent(cursor)}`
-        : `${API_BASE_URL}/feed`;
+        ? `${API_BASE_URL}/api/v1/posts?cursor=${encodeURIComponent(cursor)}`
+        : `${API_BASE_URL}/api/v1/posts`;
 
-      const res = await fetch(url, { credentials: "include" });
+      const cookies = authClient.getCookie();
+
+      const res = await fetch(url, {
+        headers: {
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        credentials: "omit",
+      });
 
       if (!res.ok) throw new Error("Failed to fetch feed");
 

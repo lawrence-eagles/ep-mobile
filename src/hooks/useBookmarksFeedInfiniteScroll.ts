@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { FeedResponse } from "@/types";
 import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
@@ -19,11 +20,13 @@ export const useBookmarksFeedInfiniteScroll = () => {
   }: {
     pageParam: string | null;
   }): Promise<FeedResponse> {
-    let url = `${API_BASE_URL}/feed/bookmarks`;
+    let url = `${API_BASE_URL}/api/v1/bookmarks`;
 
     if (pageParam) {
       url += `?cursor=${encodeURIComponent(pageParam)}`;
     }
+
+    const cookies = authClient.getCookie();
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -31,7 +34,10 @@ export const useBookmarksFeedInfiniteScroll = () => {
     try {
       res = await fetch(url, {
         method: "GET",
-        credentials: "include",
+        headers: {
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        credentials: "omit",
         signal: controller.signal,
       });
     } finally {

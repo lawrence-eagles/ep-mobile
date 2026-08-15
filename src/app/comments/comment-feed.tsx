@@ -1,3 +1,4 @@
+import ErrorScreen from "@/components/Error";
 import { useCommentsCrudMutations } from "@/hooks/useCommentsCrudMutations";
 import { useCommentsInfiniteScroll } from "@/hooks/useCommentsInfiniteScroll";
 import { useCommentsMutations } from "@/hooks/useCommentsMutations";
@@ -47,6 +48,7 @@ export default function CommentScreen() {
     isFetchingNextPage,
     isLoading,
     isError,
+    error,
     refetch,
   } = useCommentsInfiniteScroll(postId ?? "");
 
@@ -185,24 +187,31 @@ export default function CommentScreen() {
 
   if (!postId) {
     return (
-      <View style={styles.center}>
-        <Text>Invalid post</Text>
-      </View>
+      <SafeAreaView style={styles.center} edges={["top"]}>
+        <View style={styles.center}>
+          <Text>Invalid post</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (isLoading) {
-    return <ActivityIndicator style={{ marginTop: 50 }} />;
+    return (
+      <SafeAreaView style={styles.center} edges={["top"]}>
+        <ActivityIndicator style={{ marginTop: 50 }} />
+      </SafeAreaView>
+    );
   }
 
-  if (isError) {
+  if (isError && comments.length === 0) {
     return (
-      <View style={styles.center}>
-        <Text>Error loading comments</Text>
-        <Pressable onPress={() => refetch()}>
-          <Text>Retry</Text>
-        </Pressable>
-      </View>
+      <SafeAreaView style={styles.center} edges={["top"]}>
+        <ErrorScreen
+          message={error?.message ?? "Error loading comments"}
+          onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading comments"}
+        />
+      </SafeAreaView>
     );
   }
 

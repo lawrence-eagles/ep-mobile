@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth-client";
 import { Platform } from "react-native";
 
 const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
@@ -10,12 +11,14 @@ export async function sendTokenToBackend(token: string): Promise<boolean> {
   }
 
   try {
-    const response = await fetch(`${backendUrl}/api/push/register`, {
+    const cookies = authClient.getCookie();
+    const response = await fetch(`${backendUrl}/api/v1/push/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(cookies ? { Cookie: cookies } : {}),
       },
-      credentials: "include",
+      credentials: "omit",
       body: JSON.stringify({
         token,
         platform: Platform.OS,

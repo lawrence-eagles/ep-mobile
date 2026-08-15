@@ -95,6 +95,7 @@ export default function Trending() {
         <ErrorScreen
           message={error?.message ?? "Failed to load posts"}
           onRetry={refetch}
+          retryAccessibilityLabel={"Retry loading posts"}
         />
       </SafeAreaView>
     );
@@ -249,7 +250,11 @@ export default function Trending() {
           accessibilityLabel="Open profile"
         >
           <Image
-            source={{ uri: user?.image ?? "https://i.pravatar.cc/100" }}
+            source={{
+              uri:
+                user?.image ??
+                "https://ik.imagekit.io/xc7g6aws4f/user-profile-placeholder-image.jpg?updatedAt=1786553603639",
+            }}
             style={styles.avatar}
           />
         </Pressable>
