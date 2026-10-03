@@ -299,7 +299,18 @@ Available to any test user with a Google Account. Your app will start in testing
 
 ```bash
 npx eas-cli@latest credentials -p android
+```
+
+Alternatively
+
+```bash
 eas credentials -p android
+```
+
+Build development app:
+
+```bash
+eas build --profile development
 ```
 
 <!--

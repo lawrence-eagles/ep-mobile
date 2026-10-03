@@ -161,7 +161,7 @@ export const useHandleChangeProfileImage = (
         }),
       });
 
-      const avatarResult = await response.json();
+      const avatarResult = await response.json().catch(() => null);
 
       if (!response.ok) {
         throw new Error(avatarResult?.error ?? "Failed to update avatar");
