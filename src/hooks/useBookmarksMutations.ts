@@ -71,7 +71,7 @@ export const useBookmarksMutations = () => {
 
   const likeMutation = useMutation({
     mutationFn: async (postId: string) => {
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/likes`, {
         method: "POST",
         headers: {
@@ -106,7 +106,7 @@ export const useBookmarksMutations = () => {
 
   const unlikeMutation = useMutation({
     mutationFn: async (postId: string) => {
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/likes/${postId}`, {
         method: "DELETE",
         headers: {
@@ -144,7 +144,7 @@ export const useBookmarksMutations = () => {
     { previousData?: InfiniteData<FeedResponse> }
   >({
     mutationFn: async (postId: string) => {
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks`, {
         method: "POST",
         headers: {
@@ -190,7 +190,7 @@ export const useBookmarksMutations = () => {
     { previousData?: InfiniteData<FeedResponse> }
   >({
     mutationFn: async (postId: string) => {
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks/${postId}`, {
         method: "DELETE",
         headers: {

@@ -26,7 +26,7 @@ export const useBookmarksFeedInfiniteScroll = () => {
       url += `?cursor=${encodeURIComponent(pageParam)}`;
     }
 
-    const cookies = authClient.getCookie();
+    const cookies = await authClient.getCookie();
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);

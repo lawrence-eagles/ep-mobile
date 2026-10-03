@@ -68,7 +68,7 @@ export const useCommentsCrudMutations = ({
         parentId: replyTo ?? null,
       };
 
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/comments/${postId}`, {
         method: "POST",
         headers: {
@@ -97,7 +97,7 @@ export const useCommentsCrudMutations = ({
 
   const deleteMutation = useMutation<void, Error, string>({
     mutationFn: async (id) => {
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/comments/${id}`, {
         method: "DELETE",
         headers: {
@@ -126,7 +126,7 @@ export const useCommentsCrudMutations = ({
         throw new Error("Content cannot be empty");
       }
 
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/comments/${id}`, {
         method: "PUT",
         headers: {

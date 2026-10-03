@@ -50,7 +50,7 @@ export const useForYouFeedMutations = () => {
   // ==============================
   const likeMutation = useMutation<void, Error, string, Ctx>({
     mutationFn: async (postId) => {
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/likes`, {
         method: "POST",
         headers: {
@@ -106,7 +106,7 @@ export const useForYouFeedMutations = () => {
   // ==============================
   const unlikeMutation = useMutation<void, Error, string, Ctx>({
     mutationFn: async (postId) => {
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/likes/${postId}`, {
         method: "DELETE",
         headers: {
@@ -160,7 +160,7 @@ export const useForYouFeedMutations = () => {
   // ==============================
   const bookmarkMutation = useMutation<void, Error, string, Ctx>({
     mutationFn: async (postId) => {
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks`, {
         method: "POST",
         headers: {
@@ -208,7 +208,7 @@ export const useForYouFeedMutations = () => {
   // ==============================
   const unbookmarkMutation = useMutation<void, Error, string, Ctx>({
     mutationFn: async (postId) => {
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks/${postId}`, {
         method: "DELETE",
         headers: {

@@ -72,7 +72,7 @@ export const useCommentsMutations = (postId: string) => {
 
   const likeMutation = useMutation<void, Error, string, MutationContext>({
     mutationFn: async (commentId) => {
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(`${API_BASE_URL}/api/v1/comment-likes`, {
         method: "POST",
         headers: {
@@ -119,7 +119,7 @@ export const useCommentsMutations = (postId: string) => {
 
   const unlikeMutation = useMutation<void, Error, string, MutationContext>({
     mutationFn: async (commentId) => {
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(
         `${API_BASE_URL}/api/v1/comment-likes/${commentId}`,
         {

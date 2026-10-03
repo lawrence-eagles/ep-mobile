@@ -26,7 +26,7 @@ export const useTrendingMutations = () => {
   };
 
   async function likePost(postId: string) {
-    const cookies = authClient.getCookie();
+    const cookies = await authClient.getCookie();
     const res = await fetch(`${API_BASE_URL}/api/v1/likes`, {
       method: "POST",
       headers: {
@@ -41,7 +41,7 @@ export const useTrendingMutations = () => {
   }
 
   async function unlikePost(postId: string) {
-    const cookies = authClient.getCookie();
+    const cookies = await authClient.getCookie();
     const res = await fetch(`${API_BASE_URL}/api/v1/likes/${postId}`, {
       method: "DELETE",
       headers: {
@@ -54,7 +54,7 @@ export const useTrendingMutations = () => {
   }
 
   async function bookmarkPost(postId: string) {
-    const cookies = authClient.getCookie();
+    const cookies = await authClient.getCookie();
     const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks`, {
       method: "POST",
       headers: {
@@ -69,7 +69,7 @@ export const useTrendingMutations = () => {
   }
 
   async function unbookmarkPost(postId: string) {
-    const cookies = authClient.getCookie();
+    const cookies = await authClient.getCookie();
     const res = await fetch(`${API_BASE_URL}/api/v1/bookmarks/${postId}`, {
       method: "DELETE",
       headers: {

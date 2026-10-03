@@ -20,7 +20,7 @@ export const useExploreFeedInfiniteScroll = (activeCategoryId?: string) => {
       url.searchParams.append("cursor", pageParam);
     }
 
-    const cookies = authClient.getCookie();
+    const cookies = await authClient.getCookie();
 
     const res = await fetch(url.toString(), {
       headers: {

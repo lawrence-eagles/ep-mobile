@@ -27,7 +27,7 @@ export const useForYouFeedInfiniteScroll = () => {
         ? `${API_BASE_URL}/api/v1/posts?cursor=${encodeURIComponent(cursor)}`
         : `${API_BASE_URL}/api/v1/posts`;
 
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
 
       const res = await fetch(url, {
         headers: {

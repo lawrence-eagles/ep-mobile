@@ -1,4 +1,3 @@
-import { useAuth } from "@/hooks/useAuth";
 import { authClient } from "@/lib/auth-client";
 import { router } from "expo-router";
 import { useCallback } from "react";
@@ -8,7 +7,7 @@ export const useExecuteDeleteAccount = (
   isDeletingAccount: boolean,
   setIsDeletingAccount: (value: boolean) => void,
 ) => {
-  const { refetch: refetchSession } = useAuth();
+  // const { refetch: refetchSession } = useAuth();
 
   // ==========================================================
   // DELETE ACCOUNT
