@@ -52,7 +52,7 @@ export const useFollowingMutations = () => {
       const url = isLiked
         ? `${API_BASE_URL}/api/v1/likes/${postId}`
         : `${API_BASE_URL}/api/v1/likes`;
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(url, {
         method: isLiked ? "DELETE" : "POST",
         headers: {
@@ -111,7 +111,7 @@ export const useFollowingMutations = () => {
       const url = isBookmarked
         ? `${API_BASE_URL}/api/v1/bookmarks/${postId}`
         : `${API_BASE_URL}/api/v1/bookmarks`;
-      const cookies = authClient.getCookie();
+      const cookies = await authClient.getCookie();
       const res = await fetch(url, {
         method: isBookmarked ? "DELETE" : "POST",
         headers: {

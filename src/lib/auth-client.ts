@@ -1,4 +1,5 @@
 import { expoClient } from "@better-auth/expo/client";
+import { inferAdditionalFields } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import * as SecureStore from "expo-secure-store";
 import { getEnv } from "../lib/env";
@@ -12,6 +13,9 @@ export const authClient = createAuthClient({
       scheme: env.APP_SCHEME,
       storagePrefix: env.APP_SCHEME,
       storage: SecureStore,
+    }),
+    inferAdditionalFields({
+      user: { imageFileId: { type: "string", required: false } },
     }),
   ],
 });

@@ -26,7 +26,7 @@ export const useTrendingInfiniteScroll = () => {
 
     // Get the current Better Auth session cookie
     // immediately before making the authenticated request.
-    const cookies = authClient.getCookie();
+    const cookies = await authClient.getCookie();
 
     const res = await fetch(url, {
       method: "GET",

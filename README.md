@@ -285,4 +285,64 @@ return (
   </Pressable>
 </SafeAreaView>
 )
+
+
+The word anonymous means that a person, piece of work, or action has no known name or identity. It describes situations where the author, sender, or creator is hidden, unknown, or chooses to keep their name private.
+
+Connect android app to EAS: npx eas-cli@latest init --id 07a39528-8b44-4b30-ad56-f4d0f199f891
+https://console.cloud.google.com/welcome/new
+
+
+External: project configuration
+Available to any test user with a Google Account. Your app will start in testing mode and will only be available to users you add to the list of test users. Once your app is ready to push to production, you may need to verify your app.
+ -->
+
+```bash
+npx eas-cli@latest credentials -p android
+eas credentials -p android
+```
+
+<!--
+Assign a name to your build credentials: … Build Credentials iUZwJE3xUU
+✔ Generate a new Android Keystore? … yes
+✔ Created keystore
+✔ Created Android build credentials Build Credentials iUZwJE3xUU
+ -->
+
+<!--
+✔ What do you want to do? › Keystore: Manage everything needed to build your project
+Android Credentials
+Project                 eaglespress
+Application Identifier  com.anonymous.eaglespress
+No credentials set up yet!
+
+✔ What do you want to do? › Set up a new keystore
+✔ Assign a name to your build credentials: … Build Credentials iUZwJE3xUU
+✔ Generate a new Android Keystore? … yes
+✔ Created keystore
+✔ Created Android build credentials Build Credentials iUZwJE3xUU
+Press any key to continue...
+
+
+Android Credentials
+Project                 eaglespress
+Application Identifier  com.anonymous.eaglespress
+
+Push Notifications (FCM Legacy)
+  None assigned yet
+
+Push Notifications (FCM V1): Google Service Account Key For FCM V1
+  None assigned yet
+
+Submissions: Google Service Account Key for Play Store Submissions
+  None assigned yet
+
+Configuration: Build Credentials iUZwJE3xUU (Default)
+Keystore
+Type                JKS
+Key Alias           bceb82b05b8f31c48e69d1f3f06758f9
+MD5 Fingerprint     BB:1C:62:EB:FF:22:B4:ED:E6:78:0F:4D:25:13:CF:84
+SHA1 Fingerprint    FC:AF:16:79:0C:C3:8E:80:14:8A:C1:BF:8B:A6:84:B4:2F:C9:3F:FE
+SHA256 Fingerprint  89:2A:5D:EB:92:F8:64:9A:ED:1B:77:CB:B2:11:6B:28:4F:62:80:F7:7A:45:94:13:21:E1:45:AF:83:93:17:9B
+Updated             40 seconds ago
  -->

@@ -34,7 +34,7 @@ export const useFollowingInfiniteScroll = () => {
       url += `?cursor=${encodedCursor}`;
     }
 
-    const cookies = authClient.getCookie();
+    const cookies = await authClient.getCookie();
     const res = await fetch(url, {
       method: "GET",
       headers: {

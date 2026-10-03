@@ -89,7 +89,7 @@ export const useCategories = () => {
   // API FUNCTIONS
   // ==============================
   const fetchCategories = async (): Promise<Category[]> => {
-    const cookies = authClient.getCookie();
+    const cookies = await authClient.getCookie();
     const res = await fetch(`${API_BASE_URL}/api/v1/categories`, {
       headers: {
         ...(cookies ? { Cookie: cookies } : {}),
@@ -107,7 +107,7 @@ export const useCategories = () => {
   };
 
   const followCategory = async (categoryId: string) => {
-    const cookies = authClient.getCookie();
+    const cookies = await authClient.getCookie();
     const res = await fetch(`${API_BASE_URL}/api/v1/follows`, {
       method: "POST",
       headers: {
@@ -124,7 +124,7 @@ export const useCategories = () => {
   };
 
   const unfollowCategory = async (categoryId: string) => {
-    const cookies = authClient.getCookie();
+    const cookies = await authClient.getCookie();
     const res = await fetch(`${API_BASE_URL}/api/v1/follows/${categoryId}`, {
       method: "DELETE",
       headers: {

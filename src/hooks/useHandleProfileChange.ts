@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useUploadProfileImageToImageKit } from "@/hooks/useUploadProfileImageToImageKit";
 import { authClient } from "@/lib/auth-client";
+import { getEnv } from "@/lib/env";
 import * as ImagePicker from "expo-image-picker";
 import * as Linking from "expo-linking";
 import { useCallback } from "react";
@@ -16,6 +17,8 @@ export const useHandleChangeProfileImage = (
   isUploadingImage: boolean,
   setIsUploadingImage: (value: boolean) => void,
 ) => {
+  const env = getEnv();
+  const API_URL = env.BACKEND_URL;
   // --------------------------------------------------------
   // AUTH
   // --------------------------------------------------------
@@ -135,7 +138,7 @@ export const useHandleChangeProfileImage = (
       // UPLOAD TO IMAGEKIT
       // ------------------------------------------------------
 
-      const uploadedImageUrl = await uploadProfileImageToImageKit(
+      const { url, fileId } = await uploadProfileImageToImageKit(
         asset.uri,
         fileName,
       );
@@ -144,14 +147,24 @@ export const useHandleChangeProfileImage = (
       // UPDATE BETTER AUTH
       // ------------------------------------------------------
 
-      const updateResult = await authClient.updateUser({
-        image: uploadedImageUrl,
+      const cookies = await authClient.getCookie();
+      const response = await fetch(`${API_URL}/api/user/avatar`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        credentials: "omit",
+        body: JSON.stringify({
+          image: url,
+          imageFileId: fileId,
+        }),
       });
 
-      if (updateResult.error) {
-        throw new Error(
-          updateResult.error.message || "Unable to update your profile image.",
-        );
+      const avatarResult = await response.json();
+
+      if (!response.ok) {
+        throw new Error(avatarResult?.error ?? "Failed to update avatar");
       }
 
       // ------------------------------------------------------

@@ -51,7 +51,7 @@ export const useExploreMutations = () => {
           }
         }
 
-        const cookies = authClient.getCookie();
+        const cookies = await authClient.getCookie();
         const res = await fetch(url, {
           method,
           headers: {

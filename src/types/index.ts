@@ -79,6 +79,7 @@ export type ImageKitUploadResponse = {
   url?: string;
   filePath?: string;
   name?: string;
+  fileId?: string;
 };
 
 export type ImageKitUploadError = {

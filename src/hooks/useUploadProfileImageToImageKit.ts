@@ -17,8 +17,15 @@ const MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024;
 export const useUploadProfileImageToImageKit = () => {
   const { user } = useAuth();
 
+  if (!user?.id) {
+    throw new Error("You must be signed in to upload a profile image.");
+  }
+
   return useCallback(
-    async (uri: string, fileName: string): Promise<string> => {
+    async (
+      uri: string,
+      fileName: string,
+    ): Promise<{ url: string; fileId: string }> => {
       // ------------------------------------------------------
       // CREATE FILE REFERENCE
       // ------------------------------------------------------
@@ -69,41 +76,42 @@ export const useUploadProfileImageToImageKit = () => {
       // ------------------------------------------------------
       // UPLOAD TO IMAGEKIT
       // ------------------------------------------------------
+      return await new Promise<{ url: string; fileId: string }>(
+        (resolve, reject) => {
+          const client = imagekit as unknown as ImageKitClient;
 
-      return await new Promise<string>((resolve, reject) => {
-        const client = imagekit as unknown as ImageKitClient;
+          client.upload(
+            {
+              file: base64,
+              fileName: finalFileName,
+              folder: `/eaglespress/profile-images/${user.id}`,
+              useUniqueFileName: true,
+              responseFields: ["url", "filePath", "name"], // fileId is returned by default
+            },
+            (error, result) => {
+              if (error) {
+                reject(
+                  new Error(
+                    error.message || "Image upload failed. Please try again.",
+                  ),
+                );
+                return;
+              }
 
-        client.upload(
-          {
-            file: base64,
-            fileName: finalFileName,
-            folder: "/eaglespress/profile-images",
-            useUniqueFileName: true,
-            responseFields: ["url", "filePath", "name"],
-          },
-          (error, result) => {
-            if (error) {
-              reject(
-                new Error(
-                  error.message || "Image upload failed. Please try again.",
-                ),
-              );
-              return;
-            }
+              if (!result?.url || !result?.fileId) {
+                reject(
+                  new Error(
+                    "Image upload completed but no image URL or file ID was returned.",
+                  ),
+                );
+                return;
+              }
 
-            if (!result?.url) {
-              reject(
-                new Error(
-                  "Image upload completed but no image URL was returned.",
-                ),
-              );
-              return;
-            }
-
-            resolve(result.url);
-          },
-        );
-      });
+              resolve({ url: result.url, fileId: result.fileId });
+            },
+          );
+        },
+      );
     },
     [user?.id],
   );

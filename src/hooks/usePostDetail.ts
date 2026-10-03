@@ -24,7 +24,6 @@ interface Post {
 // ================= HOOK =================
 
 export const usePostDetail = (slug: string) => {
-  const cookies = authClient.getCookie();
   const queryClient = useQueryClient();
   const { BACKEND_URL } = getEnv();
 
@@ -50,8 +49,8 @@ export const usePostDetail = (slug: string) => {
   };
 
   // ================= API =================
-  const fetchPost = (slug: string) => {
-    const cookies = authClient.getCookie();
+  const fetchPost = async (slug: string) => {
+    const cookies = await authClient.getCookie();
 
     return fetchJSON<Post>(`${BACKEND_URL}/api/v1/single-post/${slug}`, {
       headers: {
@@ -60,8 +59,8 @@ export const usePostDetail = (slug: string) => {
     });
   };
 
-  const likePost = (postId: string) => {
-    const cookies = authClient.getCookie();
+  const likePost = async (postId: string) => {
+    const cookies = await authClient.getCookie();
     return fetchJSON(`${BACKEND_URL}/api/v1/likes`, {
       method: "POST",
       headers: {
@@ -72,8 +71,8 @@ export const usePostDetail = (slug: string) => {
     });
   };
 
-  const unlikePost = (postId: string) => {
-    const cookies = authClient.getCookie();
+  const unlikePost = async (postId: string) => {
+    const cookies = await authClient.getCookie();
     return fetchJSON(`${BACKEND_URL}/api/v1/likes/${postId}`, {
       headers: {
         ...(cookies ? { Cookie: cookies } : {}),
@@ -82,8 +81,8 @@ export const usePostDetail = (slug: string) => {
     });
   };
 
-  const bookmarkPost = (postId: string) => {
-    const cookies = authClient.getCookie();
+  const bookmarkPost = async (postId: string) => {
+    const cookies = await authClient.getCookie();
     return fetchJSON(`${BACKEND_URL}/api/v1/bookmarks`, {
       method: "POST",
       headers: {
@@ -94,8 +93,8 @@ export const usePostDetail = (slug: string) => {
     });
   };
 
-  const unbookmarkPost = (postId: string) => {
-    const cookies = authClient.getCookie();
+  const unbookmarkPost = async (postId: string) => {
+    const cookies = await authClient.getCookie();
     return fetchJSON(`${BACKEND_URL}/api/v1/bookmarks/${postId}`, {
       method: "DELETE",
       headers: {
@@ -104,8 +103,8 @@ export const usePostDetail = (slug: string) => {
     });
   };
 
-  const followCategory = (categoryId: string) => {
-    const cookies = authClient.getCookie();
+  const followCategory = async (categoryId: string) => {
+    const cookies = await authClient.getCookie();
     return fetchJSON(`${BACKEND_URL}/api/v1/follows`, {
       method: "POST",
       headers: {
@@ -116,8 +115,8 @@ export const usePostDetail = (slug: string) => {
     });
   };
 
-  const unfollowCategory = (categoryId: string) => {
-    const cookies = authClient.getCookie();
+  const unfollowCategory = async (categoryId: string) => {
+    const cookies = await authClient.getCookie();
     return fetchJSON(`${BACKEND_URL}/api/v1/follows/${categoryId}`, {
       method: "DELETE",
       headers: {
