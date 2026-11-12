@@ -2,6 +2,7 @@ import type { RepliesPageResponse } from "@/hooks/useRepliesInfiniteScroll";
 import { useRepliesInfiniteScroll } from "@/hooks/useRepliesInfiniteScroll";
 import type { Comment, SelectedCommentAction } from "@/types";
 import { type InfiniteData } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { Heart, MessageCircle, Pencil, Trash2 } from "lucide-react-native";
@@ -241,6 +242,7 @@ const CommentItem = ({
 };
 
 // ================= STYLES =================
+// THE FULL STYLE IS LEFT HERE FOR REFERENCE.
 
 const styles = StyleSheet.create({
   container: {

@@ -364,15 +364,9 @@ router.push({
   params: { postId: data.id },
 });
 
-1. Bottom Sheet modal --- /ugc/action
+1. Bottom Sheet modal ✅
 2. user-profile.tsx /ugc/user-profile
 3. report-comment.tsx /ugc/report-comment
 3. report-user.tsx /ugc/report-user
 4. report-success.tsx /ugc/report-success
-
-
-1. currently on long press of a comment or reply navigates to /ugc/action, change this so that on long press of a comment or reply should open the Action sheet (CommentActionSheet).
-2. implement the onBlockUser function: Call the authenticated Eaglespress block-user API the endpoint is /api/v1/users/:userId/block.  I have shared my userBlock sevice and controller above. Also, Invalidates the relevant TanStack Query caches after success and Handles any necessary feed/comment state updates. I will share my useCommentsInfiniteScroll and useRepliesInfiniteScroll hooks below for your reference.
-
-Return a complete production ready comment-feed.tsx code. do not omit or miss anything. Note do only what i ask for and make sure you preserve my styles.
  -->
