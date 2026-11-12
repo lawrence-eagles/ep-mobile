@@ -1,13 +1,14 @@
+import CommentActionSheet from "@/components/CommentActionSheet";
+import CommentItem from "@/components/CommentItem";
 import ErrorScreen from "@/components/Error";
 import { useCommentsCrudMutations } from "@/hooks/useCommentsCrudMutations";
 import { useCommentsInfiniteScroll } from "@/hooks/useCommentsInfiniteScroll";
 import { useCommentsMutations } from "@/hooks/useCommentsMutations";
-import { Comment, Reply } from "@/types";
-import { formatDistanceToNow } from "date-fns";
-import { BlurView } from "expo-blur";
-import { Image } from "expo-image";
-import { useLocalSearchParams } from "expo-router";
-import { Heart, MessageCircle, Pencil, Trash2 } from "lucide-react-native";
+import { authClient } from "@/lib/auth-client";
+import { getEnv } from "@/lib/env";
+import type { Comment, SelectedCommentAction } from "@/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,24 +23,35 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// ================= HELPERS =================
+// ================= TYPES =================
 
-const getSafeTimeAgo = (dateString: string) => {
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "";
-  return formatDistanceToNow(date, { addSuffix: true });
-};
+interface BlockUserResponse {
+  success?: boolean;
+  message?: string;
+  error?: string;
+}
 
-// ================= COMPONENT =================
+// ================= MAIN COMPONENT =================
 
 export default function CommentScreen() {
+  const router = useRouter();
+
+  const queryClient = useQueryClient();
+
   const params = useLocalSearchParams();
+
   const postId = Array.isArray(params.postId)
     ? params.postId[0]
     : params.postId;
 
+  const API_BASE_URL = getEnv().BACKEND_URL;
+
   const [input, setInput] = useState("");
   const [replyTo, setReplyTo] = useState<string | null>(null);
+
+  // Currently selected comment or reply for the action sheet.
+  const [selectedAction, setSelectedAction] =
+    useState<SelectedCommentAction | null>(null);
 
   const {
     data,
@@ -70,12 +82,140 @@ export default function CommentScreen() {
 
   const isSendDisabled = !input.trim() || createMutation.isPending;
 
-  // ✅ MEMOIZED
+  // ================= MEMOIZED COMMENTS =================
+
   const comments = useMemo(() => {
     return data?.pages.flatMap((page) => page.comments) ?? [];
   }, [data]);
 
-  // ================= ACTIONS =================
+  // ================= COMMENT ACTION SHEET =================
+
+  // Open the action sheet for the selected comment or reply.
+  const handleOpenActionSheet = useCallback((item: SelectedCommentAction) => {
+    setSelectedAction(item);
+  }, []);
+
+  // Close the action sheet.
+  const handleCloseActionSheet = useCallback(() => {
+    setSelectedAction(null);
+  }, []);
+
+  // ================= BLOCK USER =================
+
+  /**
+   * Calls the authenticated Eaglespress block-user API.
+   *
+   * After a successful block:
+   * - Invalidates the current post's root comments query.
+   * - Invalidates all reply queries belonging to the current post.
+   * - Invalidates feed-related queries so blocked-user content can disappear.
+   *
+   * The backend must filter blocked users from all relevant endpoints.
+   */
+  const handleBlockUser = useCallback(
+    async (userId: string): Promise<void> => {
+      if (!userId) {
+        throw new Error("Invalid user ID.");
+      }
+
+      const cookies = await authClient.getCookie();
+
+      if (!cookies) {
+        throw new Error("Your session has expired. Please sign in again.");
+      }
+
+      const baseUrl = API_BASE_URL.replace(/\/+$/, "");
+
+      const response = await fetch(
+        `${baseUrl}/api/v1/users/${encodeURIComponent(userId)}/block`,
+        {
+          method: "POST",
+          headers: {
+            Cookie: cookies,
+            Accept: "application/json",
+          },
+          credentials: "omit",
+        },
+      );
+
+      // Parse the response safely.
+      let responseData: BlockUserResponse | null = null;
+
+      try {
+        responseData = (await response.json()) as BlockUserResponse;
+      } catch {
+        // A successful response does not necessarily need a JSON body.
+        responseData = null;
+      }
+
+      if (!response.ok || responseData?.success === false) {
+        throw new Error(
+          responseData?.message ||
+            responseData?.error ||
+            `Failed to block user. Server returned ${response.status}.`,
+        );
+      }
+
+      // ================================================
+      // INVALIDATE COMMENT AND REPLY QUERIES
+      // ================================================
+
+      const invalidationPromises = [
+        // Root comments for the current post.
+        queryClient.invalidateQueries({
+          queryKey: ["comments", postId],
+        }),
+
+        // All independently paginated replies for the current post.
+        queryClient.invalidateQueries({
+          queryKey: ["replies", postId],
+        }),
+
+        // ==============================================
+        // INVALIDATE FEED-RELATED QUERIES
+        // ==============================================
+
+        // These prefixes should match the first element of
+        // the corresponding TanStack Query keys in your app.
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const queryRoot = query.queryKey[0];
+
+            return (
+              typeof queryRoot === "string" &&
+              [
+                "forYouFeed",
+                "explore-feed",
+                "following-feed",
+                "trending-feed",
+                "bookmarks",
+              ].includes(queryRoot)
+            );
+          },
+        }),
+      ];
+
+      await Promise.all(invalidationPromises);
+    },
+    [API_BASE_URL, postId, queryClient],
+  );
+
+  // ================= NAVIGATION ACTIONS =================
+
+  // Navigate to the author's profile when their avatar is tapped.
+  const handleUserProfilePress = useCallback(
+    (userId: string) => {
+      router.push({
+        pathname: "/ugc/user-profile",
+        params: {
+          userId,
+        },
+      });
+    },
+    [router],
+  );
+
+  // ================= LIKE ACTION =================
 
   const handleLike = useCallback(
     (id: string, isLiked: boolean) => {
@@ -88,98 +228,65 @@ export default function CommentScreen() {
     [likeMutation, unlikeMutation],
   );
 
-  // ================= RENDER REPLY =================
+  // ================= COMMENT ACTIONS =================
 
-  const renderReply = useCallback(
-    (reply: Reply) => (
-      <View key={reply.id} style={styles.replyContainer}>
-        <Text style={styles.username}>{reply.userName}</Text>
+  const handleReplyPress = useCallback((commentId: string) => {
+    setReplyTo(commentId);
+  }, []);
 
-        <Text>{reply.content}</Text>
-
-        <View style={styles.actions}>
-          <Pressable
-            onPress={() => handleLike(reply.id, reply.isLiked)}
-            disabled={likeMutation.isPending || unlikeMutation.isPending}
-          >
-            <Heart size={16} color={reply.isLiked ? "red" : "gray"} />
-          </Pressable>
-
-          <Text>{reply.likesCount}</Text>
-        </View>
-      </View>
-    ),
-    [handleLike, likeMutation.isPending, unlikeMutation.isPending],
+  const handleEdit = useCallback(
+    (commentId: string) => {
+      updateMutation.mutate({
+        id: commentId,
+        content: input,
+      });
+    },
+    [input, updateMutation],
   );
+
+  const handleDelete = useCallback(
+    (commentId: string) => {
+      deleteMutation.mutate(commentId);
+    },
+    [deleteMutation],
+  );
+
+  // ================= ROOT COMMENT PAGINATION =================
+
+  const handleLoadMoreComments = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   // ================= RENDER COMMENT =================
 
   const renderComment = useCallback(
     ({ item }: { item: Comment }) => (
-      <View style={styles.card}>
-        <BlurView intensity={30} style={StyleSheet.absoluteFill} />
-
-        <View style={styles.row}>
-          <Image
-            source={{
-              uri: item.userImage,
-            }}
-            style={styles.avatar}
-          />
-
-          <View style={{ flex: 1 }}>
-            <Text style={styles.username}>{item.userName}</Text>
-
-            <Text>{item.content}</Text>
-
-            <Text style={styles.time}>{getSafeTimeAgo(item.created_at)}</Text>
-
-            <View style={styles.actions}>
-              <Pressable
-                onPress={() => handleLike(item.id, item.isLiked)}
-                disabled={likeMutation.isPending || unlikeMutation.isPending}
-              >
-                <Heart size={18} color={item.isLiked ? "red" : "gray"} />
-              </Pressable>
-
-              <Text>{item.likesCount}</Text>
-
-              <Pressable onPress={() => setReplyTo(item.id)}>
-                <MessageCircle size={18} />
-              </Pressable>
-
-              <Pressable
-                onPress={() =>
-                  updateMutation.mutate({
-                    id: item.id,
-                    content: input,
-                  })
-                }
-              >
-                <Pencil size={16} />
-              </Pressable>
-
-              <Pressable
-                onPress={() => deleteMutation.mutate(item.id)}
-                disabled={deleteMutation.isPending}
-              >
-                <Trash2 size={16} color="red" />
-              </Pressable>
-            </View>
-
-            {item.replies.length > 0 ? item.replies.map(renderReply) : null}
-          </View>
-        </View>
-      </View>
+      <CommentItem
+        comment={item}
+        postId={postId ?? ""}
+        onLongPress={handleOpenActionSheet}
+        onProfilePress={handleUserProfilePress}
+        onLike={handleLike}
+        onReplyPress={handleReplyPress}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        isLikePending={likeMutation.isPending || unlikeMutation.isPending}
+        isDeletePending={deleteMutation.isPending}
+      />
     ),
     [
+      postId,
+      handleOpenActionSheet,
+      handleUserProfilePress,
       handleLike,
-      renderReply,
+      handleReplyPress,
+      handleEdit,
+      handleDelete,
       likeMutation.isPending,
       unlikeMutation.isPending,
       deleteMutation.isPending,
-      updateMutation,
-      input,
     ],
   );
 
@@ -209,7 +316,7 @@ export default function CommentScreen() {
         <ErrorScreen
           message={error?.message ?? "Error loading comments"}
           onRetry={refetch}
-          retryAccessibilityLabel={"Retry loading comments"}
+          retryAccessibilityLabel="Retry loading comments"
         />
       </SafeAreaView>
     );
@@ -230,11 +337,7 @@ export default function CommentScreen() {
         renderItem={renderComment}
         keyExtractor={(item) => item.id}
         onEndReachedThreshold={0.5}
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) {
-            fetchNextPage();
-          }
-        }}
+        onEndReached={handleLoadMoreComments}
         initialNumToRender={10}
         windowSize={5}
         removeClippedSubviews
@@ -247,6 +350,7 @@ export default function CommentScreen() {
       />
 
       {/* INPUT + KEYBOARD FIX */}
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={80}
@@ -259,9 +363,13 @@ export default function CommentScreen() {
             style={styles.input}
           />
 
-          {/* cancel reply */}
+          {/* Cancel reply */}
           {replyTo && (
-            <Pressable onPress={() => setReplyTo(null)}>
+            <Pressable
+              onPress={() => setReplyTo(null)}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel reply"
+            >
               <Text style={{ marginRight: 8 }}>Cancel</Text>
             </Pressable>
           )}
@@ -269,11 +377,28 @@ export default function CommentScreen() {
           <Pressable
             onPress={() => createMutation.mutate()}
             disabled={isSendDisabled}
+            accessibilityRole="button"
+            accessibilityLabel="Send comment"
           >
             <Text>{createMutation.isPending ? "..." : "Send"}</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      {/* COMMENT / REPLY ACTION SHEET */}
+
+      {selectedAction ? (
+        <CommentActionSheet
+          visible={true}
+          commentId={selectedAction.id}
+          commentText={selectedAction.content}
+          commentAuthorId={selectedAction.authorId}
+          commentAuthorName={selectedAction.authorName}
+          contentType={selectedAction.type}
+          onClose={handleCloseActionSheet}
+          onBlockUser={handleBlockUser}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -281,7 +406,10 @@ export default function CommentScreen() {
 // ================= STYLES =================
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
 
   card: {
     margin: 10,
@@ -290,13 +418,29 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
 
-  row: { flexDirection: "row", gap: 10 },
+  row: {
+    flexDirection: "row",
+    gap: 10,
+  },
 
-  avatar: { width: 40, height: 40, borderRadius: 20 },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
 
-  username: { fontWeight: "600" },
+  username: {
+    fontWeight: "600",
+  },
 
-  time: { color: "gray", fontSize: 12 },
+  time: {
+    color: "gray",
+    fontSize: 12,
+  },
+
+  commentContent: {
+    flex: 1,
+  },
 
   actions: {
     flexDirection: "row",
@@ -306,8 +450,56 @@ const styles = StyleSheet.create({
   },
 
   replyContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
     marginTop: 10,
-    paddingLeft: 40,
+    paddingLeft: 20,
+  },
+
+  replyAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+
+  replyContent: {
+    flex: 1,
+  },
+
+  replyLoading: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+  },
+
+  replyErrorContainer: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  replyErrorText: {
+    color: "red",
+    fontSize: 12,
+  },
+
+  retryText: {
+    color: "#2563eb",
+    fontSize: 12,
+    marginTop: 8,
+  },
+
+  loadMoreReplies: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+    paddingVertical: 4,
+  },
+
+  loadMoreRepliesText: {
+    color: "#666",
+    fontSize: 13,
+    fontWeight: "600",
   },
 
   inputContainer: {
