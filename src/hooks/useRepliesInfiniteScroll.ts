@@ -1,7 +1,7 @@
 import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
 import { Reply } from "@/types";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
 
 // ================= TYPES =================
 
@@ -19,11 +19,31 @@ export interface RepliesPageResponse {
   hasMore: boolean;
 }
 
+interface UseRepliesInfiniteScrollOptions {
+  /**
+   * Enable fetching only when the user needs another page
+   * beyond the replies already embedded in the root comment.
+   */
+  enabled?: boolean;
+
+  /**
+   * Cursor supplied by the root comment response.
+   * This should point to the next page after the embedded replies.
+   */
+  initialCursor?: string | null;
+}
+
 // ================= HOOK =================
 
-export const useRepliesInfiniteScroll = (postId: string, parentId: string) => {
+export const useRepliesInfiniteScroll = (
+  postId: string,
+  parentId: string,
+  options: UseRepliesInfiniteScrollOptions = {},
+) => {
   const env = getEnv();
   const API_BASE_URL = env.BACKEND_URL;
+
+  const { enabled = false, initialCursor = null } = options;
 
   // ================= API =================
 
@@ -37,10 +57,10 @@ export const useRepliesInfiniteScroll = (postId: string, parentId: string) => {
       `${API_BASE_URL}/api/v1/comments/${encodeURIComponent(postId)}`,
     );
 
-    // Required: identifies the parent whose replies are requested.
+    // Identifies the parent whose replies are requested.
     url.searchParams.set("parentId", parentId);
 
-    // Optional: identifies the next page of replies.
+    // Identifies the next page of replies.
     if (pageParam) {
       url.searchParams.set("cursor", pageParam);
     }
@@ -69,7 +89,7 @@ export const useRepliesInfiniteScroll = (postId: string, parentId: string) => {
   const query = useInfiniteQuery<
     RepliesPageResponse,
     Error,
-    RepliesPageResponse,
+    InfiniteData<RepliesPageResponse, string | null>,
     [string, string, string],
     string | null
   >({
@@ -83,12 +103,16 @@ export const useRepliesInfiniteScroll = (postId: string, parentId: string) => {
         signal,
       }),
 
-    initialPageParam: null,
+    // Start after the replies already embedded in the root response.
+    initialPageParam: initialCursor,
 
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.nextCursor : null,
 
-    enabled: Boolean(postId && parentId),
+    // Do not fetch on CommentItem mount.
+    // Fetch only when the caller explicitly enables the query
+    // and a valid cursor indicates that another page exists.
+    enabled: Boolean(postId && parentId && enabled && initialCursor),
   });
 
   return query;

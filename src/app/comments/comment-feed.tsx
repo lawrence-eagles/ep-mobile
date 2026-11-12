@@ -46,8 +46,15 @@ export default function CommentScreen() {
 
   const API_BASE_URL = getEnv().BACKEND_URL;
 
+  // New-comment composer state.
   const [input, setInput] = useState("");
+
   const [replyTo, setReplyTo] = useState<string | null>(null);
+
+  // Dedicated edit state. Never share this with the new-comment composer.
+  const [editInput, setEditInput] = useState("");
+
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
 
   // Currently selected comment or reply for the action sheet.
   const [selectedAction, setSelectedAction] =
@@ -90,28 +97,16 @@ export default function CommentScreen() {
 
   // ================= COMMENT ACTION SHEET =================
 
-  // Open the action sheet for the selected comment or reply.
   const handleOpenActionSheet = useCallback((item: SelectedCommentAction) => {
     setSelectedAction(item);
   }, []);
 
-  // Close the action sheet.
   const handleCloseActionSheet = useCallback(() => {
     setSelectedAction(null);
   }, []);
 
   // ================= BLOCK USER =================
 
-  /**
-   * Calls the authenticated Eaglespress block-user API.
-   *
-   * After a successful block:
-   * - Invalidates the current post's root comments query.
-   * - Invalidates all reply queries belonging to the current post.
-   * - Invalidates feed-related queries so blocked-user content can disappear.
-   *
-   * The backend must filter blocked users from all relevant endpoints.
-   */
   const handleBlockUser = useCallback(
     async (userId: string): Promise<void> => {
       if (!userId) {
@@ -138,13 +133,11 @@ export default function CommentScreen() {
         },
       );
 
-      // Parse the response safely.
       let responseData: BlockUserResponse | null = null;
 
       try {
         responseData = (await response.json()) as BlockUserResponse;
       } catch {
-        // A successful response does not necessarily need a JSON body.
         responseData = null;
       }
 
@@ -156,27 +149,15 @@ export default function CommentScreen() {
         );
       }
 
-      // ================================================
-      // INVALIDATE COMMENT AND REPLY QUERIES
-      // ================================================
-
       const invalidationPromises = [
-        // Root comments for the current post.
         queryClient.invalidateQueries({
           queryKey: ["comments", postId],
         }),
 
-        // All independently paginated replies for the current post.
         queryClient.invalidateQueries({
           queryKey: ["replies", postId],
         }),
 
-        // ==============================================
-        // INVALIDATE FEED-RELATED QUERIES
-        // ==============================================
-
-        // These prefixes should match the first element of
-        // the corresponding TanStack Query keys in your app.
         queryClient.invalidateQueries({
           predicate: (query) => {
             const queryRoot = query.queryKey[0];
@@ -202,7 +183,6 @@ export default function CommentScreen() {
 
   // ================= NAVIGATION ACTIONS =================
 
-  // Navigate to the author's profile when their avatar is tapped.
   const handleUserProfilePress = useCallback(
     (userId: string) => {
       router.push({
@@ -234,15 +214,41 @@ export default function CommentScreen() {
     setReplyTo(commentId);
   }, []);
 
+  /**
+   * Load the selected comment's existing content into a dedicated
+   * edit state instead of using the new-comment composer.
+   */
   const handleEdit = useCallback(
-    (commentId: string) => {
-      updateMutation.mutate({
-        id: commentId,
-        content: input,
-      });
+    (commentId: string, currentContent: string) => {
+      if (!commentId) {
+        return;
+      }
+
+      setEditingCommentId(commentId);
+      setEditInput(currentContent);
     },
-    [input, updateMutation],
+    [],
   );
+
+  /**
+   * Submit the dedicated edit value.
+   * The shared new-comment input is never used here.
+   */
+  const handleSubmitEdit = useCallback(() => {
+    if (!editingCommentId || !editInput.trim() || updateMutation.isPending) {
+      return;
+    }
+
+    updateMutation.mutate({
+      id: editingCommentId,
+      content: editInput.trim(),
+    });
+  }, [editingCommentId, editInput, updateMutation]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingCommentId(null);
+    setEditInput("");
+  }, []);
 
   const handleDelete = useCallback(
     (commentId: string) => {
@@ -363,7 +369,6 @@ export default function CommentScreen() {
             style={styles.input}
           />
 
-          {/* Cancel reply */}
           {replyTo && (
             <Pressable
               onPress={() => setReplyTo(null)}
@@ -384,6 +389,41 @@ export default function CommentScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      {/* COMMENT EDITOR */}
+
+      {editingCommentId ? (
+        <View style={styles.editContainer}>
+          <TextInput
+            value={editInput}
+            onChangeText={setEditInput}
+            placeholder="Edit your comment..."
+            style={styles.editInput}
+            multiline
+            editable={!updateMutation.isPending}
+          />
+
+          <View style={styles.editActions}>
+            <Pressable
+              onPress={handleCancelEdit}
+              disabled={updateMutation.isPending}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel editing"
+            >
+              <Text>Cancel</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleSubmitEdit}
+              disabled={!editInput.trim() || updateMutation.isPending}
+              accessibilityRole="button"
+              accessibilityLabel="Save edited comment"
+            >
+              <Text>{updateMutation.isPending ? "Saving..." : "Save"}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
 
       {/* COMMENT / REPLY ACTION SHEET */}
 
@@ -431,5 +471,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+
+  editContainer: {
+    padding: 10,
+    borderTopWidth: 1,
+    borderColor: "#eee",
+  },
+
+  editInput: {
+    minHeight: 80,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 12,
+    padding: 10,
+    textAlignVertical: "top",
+  },
+
+  editActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 16,
+    marginTop: 10,
   },
 });

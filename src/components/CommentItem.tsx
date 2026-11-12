@@ -1,12 +1,11 @@
-import type { RepliesPageResponse } from "@/hooks/useRepliesInfiniteScroll";
 import { useRepliesInfiniteScroll } from "@/hooks/useRepliesInfiniteScroll";
 import type { Comment, SelectedCommentAction } from "@/types";
-import { type InfiniteData } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { Heart, MessageCircle, Pencil, Trash2 } from "lucide-react-native";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -33,13 +32,22 @@ interface CommentItemProps {
   postId: string;
   onLongPress: (item: SelectedCommentAction) => void;
   onProfilePress: (userId: string) => void;
-  onLike: (id: string, isLiked: boolean) => void;
+  onLike: (id: string, isLiked: boolean) => void | Promise<void>;
   onReplyPress: (commentId: string) => void;
-  onEdit: (commentId: string) => void;
+  onEdit: (commentId: string, content: string) => void;
   onDelete: (commentId: string) => void;
   isLikePending: boolean;
   isDeletePending: boolean;
 }
+
+/**
+ * The root comments response supplies an initial set of replies and
+ * pagination metadata. The cursor must point to the page after those
+ * embedded replies.
+ */
+type CommentWithReplyPagination = Comment & {
+  repliesNextCursor?: string | null;
+};
 
 const CommentItem = ({
   comment,
@@ -53,41 +61,123 @@ const CommentItem = ({
   isLikePending,
   isDeletePending,
 }: CommentItemProps) => {
+  const queryClient = useQueryClient();
+
+  const [shouldFetchMoreReplies, setShouldFetchMoreReplies] = useState(false);
+
+  // The cursor must come from the root comments response.
+  const initialCursor =
+    (comment as CommentWithReplyPagination).repliesNextCursor ?? null;
+
   // Each root comment owns an independent replies query.
-  const repliesQuery = useRepliesInfiniteScroll(postId, comment.id);
+  // It remains disabled until the user requests additional replies.
+  const repliesQuery = useRepliesInfiniteScroll(postId, comment.id, {
+    enabled: shouldFetchMoreReplies,
+    initialCursor,
+  });
 
-  /*
-   * useInfiniteQuery returns InfiniteData at runtime.
-   * The supplied hook's third generic currently declares RepliesPageResponse
-   * instead, so this assertion restores the correct infinite-data shape here.
-   */
-
-  const repliesData = repliesQuery.data as unknown as
-    | InfiniteData<RepliesPageResponse, string | null>
-    | undefined;
-
-  const fetchedReplies = useMemo(
-    () => repliesData?.pages.flatMap((page) => page.replies) ?? [],
-    [repliesData],
+  const repliesQueryKey = useMemo(
+    () => ["replies", postId, comment.id] as const,
+    [postId, comment.id],
   );
 
-  /*
-   * The root-comments endpoint already includes an initial set of replies.
-   * Keep those visible while this comment's independent replies query loads.
-   * Once the query has returned, use its paginated results.
+  // ================= EMBEDDED + FETCHED REPLIES =================
+
+  const fetchedReplies = useMemo(
+    () => repliesQuery.data?.pages.flatMap((page) => page.replies) ?? [],
+    [repliesQuery.data],
+  );
+
+  /**
+   * Keep embedded replies visible while additional pages are fetched.
+   *
+   * Merge by ID to avoid duplicates. Embedded replies take precedence
+   * because they are refreshed with the root comments response.
    */
-  const replies =
-    repliesData !== undefined ? fetchedReplies : (comment.replies ?? []);
+  const replies = useMemo(() => {
+    const repliesById = new Map(
+      fetchedReplies.map((reply) => [reply.id, reply]),
+    );
+
+    for (const reply of comment.replies ?? []) {
+      repliesById.set(reply.id, reply);
+    }
+
+    return Array.from(repliesById.values());
+  }, [comment.replies, fetchedReplies]);
+
+  // ================= REFRESH AFTER REPLY WRITES =================
+
+  /**
+   * The parent comments query is refreshed after creating a reply.
+   * When its embedded replies change, refresh this independent query
+   * too, provided the user has already activated it.
+   *
+   * Skip the initial render so mounting CommentItem does not trigger
+   * an unnecessary replies-query invalidation.
+   */
+  const previousEmbeddedReplies = useRef(comment.replies);
+
+  useEffect(() => {
+    const previousReplies = previousEmbeddedReplies.current;
+
+    previousEmbeddedReplies.current = comment.replies;
+
+    if (previousReplies === comment.replies || !shouldFetchMoreReplies) {
+      return;
+    }
+
+    void queryClient.invalidateQueries({
+      queryKey: repliesQueryKey,
+      exact: true,
+    });
+  }, [comment.replies, queryClient, repliesQueryKey, shouldFetchMoreReplies]);
+
+  /**
+   * ReplyItem uses this handler for reply likes.
+   * Wait for the parent mutation callback to settle before invalidating
+   * the corresponding replies query.
+   */
+  const handleReplyLike = useCallback(
+    async (replyId: string, isLiked: boolean) => {
+      try {
+        await onLike(replyId, isLiked);
+      } finally {
+        await queryClient.invalidateQueries({
+          queryKey: repliesQueryKey,
+          exact: true,
+        });
+      }
+    },
+    [onLike, queryClient, repliesQueryKey],
+  );
+
+  // ================= LOAD MORE REPLIES =================
 
   const handleLoadMoreReplies = useCallback(() => {
+    // The first independent page has not been fetched yet.
+    // Enabling the query starts it using initialCursor.
+    if (!shouldFetchMoreReplies) {
+      if (initialCursor) {
+        setShouldFetchMoreReplies(true);
+      }
+
+      return;
+    }
+
+    // Subsequent pages.
     if (repliesQuery.hasNextPage && !repliesQuery.isFetchingNextPage) {
       void repliesQuery.fetchNextPage();
     }
   }, [
-    repliesQuery.fetchNextPage,
+    shouldFetchMoreReplies,
+    initialCursor,
     repliesQuery.hasNextPage,
     repliesQuery.isFetchingNextPage,
+    repliesQuery.fetchNextPage,
   ]);
+
+  // ================= COMMENT ACTIONS =================
 
   const handleLongPress = useCallback(() => {
     onLongPress({
@@ -98,6 +188,18 @@ const CommentItem = ({
       authorName: comment.userName,
     });
   }, [onLongPress, comment]);
+
+  // ================= RENDER =================
+
+  const isInitialRepliesLoading =
+    shouldFetchMoreReplies && repliesQuery.isLoading && !repliesQuery.data;
+
+  const hasRepliesQueryError = shouldFetchMoreReplies && repliesQuery.isError;
+
+  const canLoadMoreReplies =
+    Boolean(initialCursor) &&
+    !repliesQuery.isError &&
+    (!shouldFetchMoreReplies || repliesQuery.hasNextPage);
 
   return (
     <Pressable
@@ -153,7 +255,7 @@ const CommentItem = ({
             <Text>{comment.likesCount}</Text>
 
             <Pressable
-              onPress={() => onEdit(comment.id)}
+              onPress={() => onEdit(comment.id, comment.content)}
               accessibilityRole="button"
               accessibilityLabel="Edit comment"
             >
@@ -177,18 +279,19 @@ const CommentItem = ({
               reply={reply}
               onLongPress={onLongPress}
               onProfilePress={onProfilePress}
-              onLike={onLike}
+              onLike={handleReplyLike}
               isLikePending={isLikePending}
             />
           ))}
 
-          {/* Initial replies loading indicator */}
-          {repliesQuery.isLoading && replies.length === 0 ? (
+          {/* Initial independent replies-page loading indicator */}
+          {isInitialRepliesLoading ? (
             <ActivityIndicator style={styles.replyLoading} size="small" />
           ) : null}
 
-          {/* Replies loading error */}
-          {repliesQuery.isError && replies.length === 0 ? (
+          {/* Replies query error and retry.
+              This remains visible even when embedded replies exist. */}
+          {hasRepliesQueryError ? (
             <View style={styles.replyErrorContainer}>
               <Text style={styles.replyErrorText}>
                 {repliesQuery.error?.message ?? "Error loading replies"}
@@ -204,16 +307,18 @@ const CommentItem = ({
             </View>
           ) : null}
 
-          {/* Load more replies */}
-          {repliesQuery.hasNextPage ? (
+          {/* Load the first independent page or another page */}
+          {canLoadMoreReplies ? (
             <Pressable
               style={styles.loadMoreReplies}
               onPress={handleLoadMoreReplies}
-              disabled={repliesQuery.isFetchingNextPage}
+              disabled={
+                isInitialRepliesLoading || repliesQuery.isFetchingNextPage
+              }
               accessibilityRole="button"
               accessibilityLabel="Load more replies"
             >
-              {repliesQuery.isFetchingNextPage ? (
+              {isInitialRepliesLoading || repliesQuery.isFetchingNextPage ? (
                 <ActivityIndicator size="small" />
               ) : (
                 <Text style={styles.loadMoreRepliesText}>
@@ -223,7 +328,7 @@ const CommentItem = ({
             </Pressable>
           ) : null}
 
-          {/* Error while loading another replies page */}
+          {/* Error while loading a subsequent page */}
           {repliesQuery.isFetchNextPageError ? (
             <Pressable
               onPress={handleLoadMoreReplies}
@@ -242,7 +347,7 @@ const CommentItem = ({
 };
 
 // ================= STYLES =================
-// THE FULL STYLE IS LEFT HERE FOR REFERENCE.
+// Existing styles preserved.
 
 const styles = StyleSheet.create({
   container: {
