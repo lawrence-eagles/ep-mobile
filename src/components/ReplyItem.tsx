@@ -24,7 +24,7 @@ const ReplyItem = ({
   const handleLongPress = useCallback(() => {
     onLongPress({
       id: reply.id,
-      type: "reply",
+      type: "comment",
       content: reply.content,
       authorId: reply.user_id,
       authorName: reply.userName,

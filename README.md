@@ -365,8 +365,7 @@ router.push({
 });
 
 1. Bottom Sheet modal ✅
-2. user-profile.tsx /ugc/user-profile
-3. report-comment.tsx /ugc/report-comment
-3. report-user.tsx /ugc/report-user
-4. report-success.tsx /ugc/report-success
+2. user-profile.tsx /ugc/user-profile ✅
+3. report-comment.tsx /ugc/report-comment ✅
+3. report-user.tsx /ugc/report-user ✅
  -->
