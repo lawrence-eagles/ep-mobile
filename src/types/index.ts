@@ -104,3 +104,17 @@ export type ImageKitClient = {
     ) => void,
   ) => void;
 };
+
+// ==========================================
+// COMMENT ACTION SHEET TYPES
+// ==========================================
+
+type CommentContentType = "comment" | "reply";
+
+export interface SelectedCommentAction {
+  id: string;
+  type: CommentContentType;
+  content: string;
+  authorId: string;
+  authorName: string;
+}
