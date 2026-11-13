@@ -109,6 +109,7 @@ const ReportComment = () => {
   }>();
 
   // Normalize route parameters.
+
   const commentId = Array.isArray(commentIdParam)
     ? commentIdParam[0]
     : commentIdParam;
@@ -181,7 +182,7 @@ const ReportComment = () => {
 
       return (
         responseData ?? {
-          message: "Your report was submitted successfully.",
+          message: "Your report has been submitted successfully.",
         }
       );
     },
@@ -196,7 +197,68 @@ const ReportComment = () => {
     SubmitReportParams
   >({
     mutationFn: submitReport,
+
+    // Keep the mutation pending until the comment and reply
+    // caches have been invalidated and active queries refreshed.
+    onSuccess: async (result) => {
+      if (result.hidden === true) {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ["comments"],
+          }),
+
+          queryClient.invalidateQueries({
+            queryKey: ["replies"],
+          }),
+        ]);
+      }
+    },
   });
+
+  // ================= SUBMIT FEEDBACK =================
+
+  const submitWithFeedback = useCallback(
+    async (payload: SubmitReportParams): Promise<void> => {
+      try {
+        // mutateAsync does not resolve until the awaited
+        // mutation-level onSuccess callback has completed.
+        const result = await reportMutation.mutateAsync(payload);
+
+        let message =
+          result.message || "Your report has been submitted successfully.";
+
+        if (result.hidden === true) {
+          message += "\n\nThis comment has also been hidden from your view.";
+        }
+
+        Alert.alert("Report Submitted", message, [
+          {
+            text: "Done",
+            onPress: () => router.back(),
+          },
+        ]);
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Something went wrong while submitting your report.";
+
+        Alert.alert("Report Failed", message, [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Retry",
+            onPress: () => {
+              void submitWithFeedback(payload);
+            },
+          },
+        ]);
+      }
+    },
+    [reportMutation.mutateAsync, router],
+  );
 
   // ================= SUBMIT HANDLER =================
 
@@ -235,71 +297,14 @@ const ReportComment = () => {
       hideComment,
     };
 
-    // Display successful submission.
-    async function showSuccess(result: SubmitReportResponse) {
-      // Refresh comment and reply queries only when the backend
-      // confirms that this comment was successfully hidden.
-      if (result.hidden === true) {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: ["comments"],
-          }),
-
-          queryClient.invalidateQueries({
-            queryKey: ["replies"],
-          }),
-        ]);
-      }
-
-      let message =
-        result.message || "Your report has been submitted successfully.";
-
-      if (result.hidden) {
-        message += "\n\nThis comment has also been hidden from your view.";
-      }
-
-      Alert.alert("Report Submitted", message, [
-        {
-          text: "Done",
-          onPress: () => router.back(),
-        },
-      ]);
-    }
-
-    // Display errors and allow retrying the same submission.
-    function showError(error: Error) {
-      Alert.alert(
-        "Report Failed",
-        error.message || "Something went wrong while submitting your report.",
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-          {
-            text: "Retry",
-            onPress: () => {
-              reportMutation.mutate(payload, {
-                onSuccess: showSuccess,
-                onError: showError,
-              });
-            },
-          },
-        ],
-      );
-    }
-
-    void reportMutation.mutateAsync(payload).then(showSuccess, showError);
+    void submitWithFeedback(payload);
   }, [
     commentId,
     contentType,
     selectedReason,
     hideComment,
     reportMutation.isPending,
-    reportMutation.mutate,
-    reportMutation.mutateAsync,
-    queryClient,
-    router,
+    submitWithFeedback,
   ]);
 
   // ================= RADIO OPTION =================
