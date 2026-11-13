@@ -188,34 +188,13 @@ NOTE CONFIRM THAT YOUR ERROR AND ERROR COMPONENT USAGE IN COMMENTS FEED.TSX IS C
  -->
 
 <!-- 1. use expo image
-2. use pressable
-3. use react query
-4. implement optimistic updates for the like comment and unlike comment
-5. use typescript
-6. use SafeAreaView add edges={["top"]}
-7. implement infinite scroll to match the backend implementation
-8. use the improvements already applied in the useCategories.ts hook and the onboarding.tsx code
-9. make sure to handle when there is error and retry properly
-10. Blur card background (expo-blur)
-11. Better icons (lucide-react-native)
-12. Time formatter ("2h ago") use date-fns
-13. handle loading state
-14. use normal react native styles --- do not use tailwind css.
-15. note the issues raised by code rabbit in the UI you have built above and apply the improvements to avoid those issues.
-16. fetch comments using the id received as params i passed from the post detail components using:
-
 ```js
 router.push({
   pathname: "/comments/comment-feed",
   params: { postId: data.id },
 });
 ```
-
-17. Handle empty comment --- when there is no comment
-18. handle create comment to match the backend implementation
-19. handle update comment to match the backend implementation
-20. handle delete comment to match the backend implementation
-21. handle comment reply properly, to match the backend implementation -->
+-->
 
 <!--
 Notification improvements
@@ -275,27 +254,14 @@ const response = await fetch(`${API_BASE_URL}/share`, {
 });
 ```
 
-<!-- Error component extract
-return (
- <SafeAreaView style={styles.center}>
-  <Text>Error loading post</Text>
-
-  <Pressable onPress={() => refetch()}>
-    <Text style={styles.retryText}>Retry</Text>
-  </Pressable>
-</SafeAreaView>
-)
-
-
 The word anonymous means that a person, piece of work, or action has no known name or identity. It describes situations where the author, sender, or creator is hidden, unknown, or chooses to keep their name private.
 
 Connect android app to EAS: npx eas-cli@latest init --id 07a39528-8b44-4b30-ad56-f4d0f199f891
 https://console.cloud.google.com/welcome/new
 
-
 External: project configuration
 Available to any test user with a Google Account. Your app will start in testing mode and will only be available to users you add to the list of test users. Once your app is ready to push to production, you may need to verify your app.
- -->
+-->
 
 ```bash
 npx eas-cli@latest credentials -p android
@@ -356,16 +322,4 @@ MD5 Fingerprint     BB:1C:62:EB:FF:22:B4:ED:E6:78:0F:4D:25:13:CF:84
 SHA1 Fingerprint    FC:AF:16:79:0C:C3:8E:80:14:8A:C1:BF:8B:A6:84:B4:2F:C9:3F:FE
 SHA256 Fingerprint  89:2A:5D:EB:92:F8:64:9A:ED:1B:77:CB:B2:11:6B:28:4F:62:80:F7:7A:45:94:13:21:E1:45:AF:83:93:17:9B
 Updated             40 seconds ago
- -->
-
-<!--
-router.push({
-  pathname: "/comments/comment-feed",
-  params: { postId: data.id },
-});
-
-1. Bottom Sheet modal ✅
-2. user-profile.tsx /ugc/user-profile ✅
-3. report-comment.tsx /ugc/report-comment ✅
-3. report-user.tsx /ugc/report-user ✅
  -->
