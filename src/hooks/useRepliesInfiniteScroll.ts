@@ -81,7 +81,16 @@ export const useRepliesInfiniteScroll = (
       throw new Error("Failed to fetch replies");
     }
 
-    return (await res.json()) as RepliesPageResponse;
+    const data = (await res.json()) as RepliesPageResponse;
+
+    // Reject a cursor that does not advance when more pages are available.
+    if (data.hasMore && data.nextCursor === pageParam) {
+      throw new Error(
+        "Replies pagination returned an unchanged cursor. Unable to load more replies.",
+      );
+    }
+
+    return data;
   };
 
   // ================= QUERY =================
