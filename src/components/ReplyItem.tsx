@@ -9,7 +9,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 interface ReplyItemProps {
   reply: Reply;
   onLongPress: (item: SelectedCommentAction) => void;
-  onProfilePress: (userId: string) => void;
+  onProfilePress: (userId: string, userImage: string, userName: string) => void;
   onLike: (id: string, isLiked: boolean) => void;
   isLikePending: boolean;
 }
@@ -39,7 +39,9 @@ const ReplyItem = ({
     >
       {/* Reply author's avatar */}
       <Pressable
-        onPress={() => onProfilePress(reply.user_id)}
+        onPress={() =>
+          onProfilePress(reply.user_id, reply.userImage, reply.userName)
+        }
         accessibilityRole="button"
         accessibilityLabel={`View ${reply.userName}'s profile`}
       >

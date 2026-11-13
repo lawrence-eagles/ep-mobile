@@ -1,6 +1,6 @@
 import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
-import { Reply } from "@/types";
+import type { Reply } from "@/types";
 import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
 
 // ================= TYPES =================
@@ -90,10 +90,17 @@ export const useRepliesInfiniteScroll = (
     RepliesPageResponse,
     Error,
     InfiniteData<RepliesPageResponse, string | null>,
-    [string, string, string],
+    [string, string, string, string | null],
     string | null
   >({
-    queryKey: ["replies", postId, parentId],
+    /**
+     * Include initialCursor in the query key.
+     *
+     * When the embedded replies change and the root response
+     * supplies a different cursor, TanStack Query creates
+     * a separate query instead of reusing stale pagination state.
+     */
+    queryKey: ["replies", postId, parentId, initialCursor],
 
     queryFn: ({ pageParam, signal }) =>
       fetchReplies({
@@ -106,12 +113,12 @@ export const useRepliesInfiniteScroll = (
     // Start after the replies already embedded in the root response.
     initialPageParam: initialCursor,
 
+    // Retrieve the next page only when a valid cursor exists.
     getNextPageParam: (lastPage) =>
-      lastPage.hasMore ? lastPage.nextCursor : null,
+      lastPage.hasMore && lastPage.nextCursor ? lastPage.nextCursor : undefined,
 
     // Do not fetch on CommentItem mount.
-    // Fetch only when the caller explicitly enables the query
-    // and a valid cursor indicates that another page exists.
+    // Fetch only when explicitly enabled and another page exists.
     enabled: Boolean(postId && parentId && enabled && initialCursor),
   });
 

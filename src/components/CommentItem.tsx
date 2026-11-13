@@ -31,7 +31,7 @@ interface CommentItemProps {
   comment: Comment;
   postId: string;
   onLongPress: (item: SelectedCommentAction) => void;
-  onProfilePress: (userId: string) => void;
+  onProfilePress: (userId: string, userImage: string, userName: string) => void;
   onLike: (id: string, isLiked: boolean) => void | Promise<void>;
   onReplyPress: (commentId: string) => void;
   onEdit: (commentId: string, content: string) => void;
@@ -70,12 +70,22 @@ const CommentItem = ({
     (comment as CommentWithReplyPagination).repliesNextCursor ?? null;
 
   // Each root comment owns an independent replies query.
-  // It remains disabled until the user requests additional replies.
+  // The query remains disabled until the user requests additional replies.
+  // initialCursor is part of the query key inside the hook.
   const repliesQuery = useRepliesInfiniteScroll(postId, comment.id, {
     enabled: shouldFetchMoreReplies,
     initialCursor,
   });
 
+  /**
+   * Prefix query key.
+   *
+   * Deliberately excludes initialCursor because the hook now includes
+   * initialCursor in its complete query key.
+   *
+   * Omitting exact: true allows invalidation of every cursor variant
+   * belonging to this post and parent comment.
+   */
   const repliesQueryKey = useMemo(
     () => ["replies", postId, comment.id] as const,
     [postId, comment.id],
@@ -91,16 +101,25 @@ const CommentItem = ({
   /**
    * Keep embedded replies visible while additional pages are fetched.
    *
-   * Merge by ID to avoid duplicates. Embedded replies take precedence
-   * because they are refreshed with the root comments response.
+   * IMPORTANT:
+   * 1. Insert embedded replies first to preserve their original order.
+   * 2. Append fetched replies only when their IDs are not already present.
+   * 3. Embedded replies take precedence when duplicate IDs exist.
+   *
+   * Example:
+   * Embedded: [A, B]
+   * Fetched:  [C, D]
+   * Result:   [A, B, C, D]
    */
   const replies = useMemo(() => {
     const repliesById = new Map(
-      fetchedReplies.map((reply) => [reply.id, reply]),
+      (comment.replies ?? []).map((reply) => [reply.id, reply]),
     );
 
-    for (const reply of comment.replies ?? []) {
-      repliesById.set(reply.id, reply);
+    for (const reply of fetchedReplies) {
+      if (!repliesById.has(reply.id)) {
+        repliesById.set(reply.id, reply);
+      }
     }
 
     return Array.from(repliesById.values());
@@ -110,8 +129,8 @@ const CommentItem = ({
 
   /**
    * The parent comments query is refreshed after creating a reply.
-   * When its embedded replies change, refresh this independent query
-   * too, provided the user has already activated it.
+   * When its embedded replies change, invalidate this independent
+   * replies query too, provided the user has already activated it.
    *
    * Skip the initial render so mounting CommentItem does not trigger
    * an unnecessary replies-query invalidation.
@@ -129,14 +148,14 @@ const CommentItem = ({
 
     void queryClient.invalidateQueries({
       queryKey: repliesQueryKey,
-      exact: true,
     });
   }, [comment.replies, queryClient, repliesQueryKey, shouldFetchMoreReplies]);
 
   /**
    * ReplyItem uses this handler for reply likes.
+   *
    * Wait for the parent mutation callback to settle before invalidating
-   * the corresponding replies query.
+   * the corresponding replies queries.
    */
   const handleReplyLike = useCallback(
     async (replyId: string, isLiked: boolean) => {
@@ -145,7 +164,6 @@ const CommentItem = ({
       } finally {
         await queryClient.invalidateQueries({
           queryKey: repliesQueryKey,
-          exact: true,
         });
       }
     },
@@ -212,7 +230,9 @@ const CommentItem = ({
       <View style={styles.row}>
         {/* Comment author's avatar */}
         <Pressable
-          onPress={() => onProfilePress(comment.user_id)}
+          onPress={() =>
+            onProfilePress(comment.user_id, comment.userImage, comment.userName)
+          }
           accessibilityRole="button"
           accessibilityLabel={`View ${comment.userName}'s profile`}
         >

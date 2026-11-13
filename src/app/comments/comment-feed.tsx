@@ -184,11 +184,13 @@ export default function CommentScreen() {
   // ================= NAVIGATION ACTIONS =================
 
   const handleUserProfilePress = useCallback(
-    (userId: string) => {
+    (userId: string, userImage: string, userName: string) => {
       router.push({
         pathname: "/ugc/user-profile",
         params: {
           userId,
+          userImage,
+          userName,
         },
       });
     },
@@ -232,17 +234,28 @@ export default function CommentScreen() {
 
   /**
    * Submit the dedicated edit value.
-   * The shared new-comment input is never used here.
+   *
+   * Clear the edit state only after the update succeeds.
+   * If the update fails, the editor and its text remain available
+   * so the user can correct the content or retry.
    */
   const handleSubmitEdit = useCallback(() => {
     if (!editingCommentId || !editInput.trim() || updateMutation.isPending) {
       return;
     }
 
-    updateMutation.mutate({
-      id: editingCommentId,
-      content: editInput.trim(),
-    });
+    updateMutation.mutate(
+      {
+        id: editingCommentId,
+        content: editInput.trim(),
+      },
+      {
+        onSuccess: () => {
+          setEditingCommentId(null);
+          setEditInput("");
+        },
+      },
+    );
   }, [editingCommentId, editInput, updateMutation]);
 
   const handleCancelEdit = useCallback(() => {
