@@ -1,6 +1,6 @@
 import { authClient } from "@/lib/auth-client";
 import { getEnv } from "@/lib/env";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ChevronLeft } from "lucide-react-native";
@@ -96,6 +96,7 @@ const REPORT_OPTIONS: ReportOption[] = [
 
 const ReportComment = () => {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const {
     commentId: commentIdParam,
@@ -235,7 +236,21 @@ const ReportComment = () => {
     };
 
     // Display successful submission.
-    function showSuccess(result: SubmitReportResponse) {
+    async function showSuccess(result: SubmitReportResponse) {
+      // Refresh comment and reply queries only when the backend
+      // confirms that this comment was successfully hidden.
+      if (result.hidden === true) {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ["comments"],
+          }),
+
+          queryClient.invalidateQueries({
+            queryKey: ["replies"],
+          }),
+        ]);
+      }
+
       let message =
         result.message || "Your report has been submitted successfully.";
 
@@ -283,6 +298,7 @@ const ReportComment = () => {
     reportMutation.isPending,
     reportMutation.mutate,
     reportMutation.mutateAsync,
+    queryClient,
     router,
   ]);
 
