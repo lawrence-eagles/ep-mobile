@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Star,
   Trash2,
+  UserRoundX,
 } from "lucide-react-native";
 import { useRef, useState } from "react";
 import {
@@ -258,6 +259,25 @@ const Profile = () => {
                 label="Bookmarks"
                 onPress={() => {
                   router.push("/(tabs)/bookmarks");
+                }}
+              />
+
+              <View style={styles.separator} />
+
+              {/* BLOCKED */}
+
+              <ProfileRow
+                icon={
+                  <UserRoundX size={34} color="#111827" strokeWidth={1.9} />
+                }
+                label="Blocked Users"
+                onPress={() => {
+                  router.push({
+                    pathname: "/ugc/blocked-users",
+                    params: {
+                      userId: user.id,
+                    },
+                  });
                 }}
               />
 
