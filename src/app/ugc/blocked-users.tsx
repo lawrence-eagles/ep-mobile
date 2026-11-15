@@ -1,3 +1,5 @@
+import { fetchBlockedUsers, unblockUserRequest } from "@/lib/helpers";
+import type { BlockedUser, UnblockUserResponse } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
@@ -15,18 +17,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Adjust this import to your actual Better Auth client location.
-import { authClient } from "@/lib/auth-client";
-
-// ============================================================
-// CONFIGURATION
-// ============================================================
-
-const API_BASE_URL = (process.env.EXPO_PUBLIC_BACKEND_URL ?? "").replace(
-  /\/+$/,
-  "",
-);
-
 const BLOCKED_USERS_QUERY_KEY = ["blocked-users"] as const;
 
 const PAGE_BACKGROUND = "#FFFFFF";
@@ -35,146 +25,6 @@ const ACCENT_BLUE = "#176BFF";
 const DESCRIPTION_BLUE = "#5475E9";
 const BORDER_COLOR = "#E6EEFF";
 const MUTED_TEXT = "#8793AA";
-
-// ============================================================
-// TYPES
-// ============================================================
-
-interface BlockedUser {
-  userId: string;
-  blockedAt: string;
-  name: string;
-  image: string | null;
-}
-
-interface BlockedUsersResponse {
-  success: boolean;
-  data: BlockedUser[];
-  message?: string;
-  error?: string;
-}
-
-interface UnblockUserResponse {
-  success: boolean;
-  message?: string;
-  error?: string;
-  data?: {
-    blockerId: string;
-    blockedId: string;
-    isBlocked: boolean;
-    wasBlocked: boolean;
-  };
-}
-
-// ============================================================
-// API HELPERS
-// ============================================================
-
-/**
- * Parse an API response safely.
- */
-async function parseResponse<T>(response: Response): Promise<T | null> {
-  try {
-    return (await response.json()) as T;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Get authenticated request headers.
- */
-async function getAuthenticatedHeaders(): Promise<HeadersInit> {
-  const cookies = await authClient.getCookie();
-
-  if (!cookies) {
-    throw new Error("Your session has expired. Please sign in again.");
-  }
-
-  return {
-    Cookie: cookies,
-    Accept: "application/json",
-  };
-}
-
-// ============================================================
-// FETCH BLOCKED USERS
-// ============================================================
-
-/**
- * Retrieve users blocked by the authenticated user.
- */
-async function fetchBlockedUsers(): Promise<BlockedUser[]> {
-  if (!API_BASE_URL) {
-    throw new Error("Backend URL is not configured.");
-  }
-
-  const headers = await getAuthenticatedHeaders();
-
-  const response = await fetch(`${API_BASE_URL}/api/v1/users/blocked`, {
-    method: "GET",
-    headers,
-    credentials: "omit",
-  });
-
-  const responseData = await parseResponse<BlockedUsersResponse>(response);
-
-  if (!response.ok || responseData?.success !== true) {
-    throw new Error(
-      responseData?.message ||
-        responseData?.error ||
-        `Failed to retrieve blocked users. Server returned ${response.status}.`,
-    );
-  }
-
-  if (!Array.isArray(responseData.data)) {
-    throw new Error("Invalid blocked users response from server.");
-  }
-
-  return responseData.data;
-}
-
-// ============================================================
-// UNBLOCK USER API
-// ============================================================
-
-/**
- * Unblock a previously blocked user.
- */
-async function unblockUserRequest(
-  targetUserId: string,
-): Promise<UnblockUserResponse> {
-  if (!targetUserId?.trim()) {
-    throw new Error("Invalid user ID.");
-  }
-
-  if (!API_BASE_URL) {
-    throw new Error("Backend URL is not configured.");
-  }
-
-  const headers = await getAuthenticatedHeaders();
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/v1/users/${encodeURIComponent(targetUserId)}/block`,
-    {
-      method: "DELETE",
-      headers,
-      credentials: "omit",
-    },
-  );
-
-  const responseData = await parseResponse<UnblockUserResponse>(response);
-
-  if (!response.ok || responseData?.success !== true) {
-    throw new Error(
-      responseData?.message ||
-        responseData?.error ||
-        `Failed to unblock user. Server returned ${response.status}.`,
-    );
-  }
-
-  return responseData;
-}
 
 // ============================================================
 // CACHE INVALIDATION
