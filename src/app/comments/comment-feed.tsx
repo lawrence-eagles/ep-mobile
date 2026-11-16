@@ -159,6 +159,10 @@ export default function CommentScreen() {
         }),
 
         queryClient.invalidateQueries({
+          queryKey: ["blocked-users"],
+        }),
+
+        queryClient.invalidateQueries({
           predicate: (query) => {
             const queryRoot = query.queryKey[0];
 

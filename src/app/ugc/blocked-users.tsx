@@ -1,3 +1,4 @@
+import { useAuth } from "@/hooks/useAuth";
 import { fetchBlockedUsers, unblockUserRequest } from "@/lib/helpers";
 import type { BlockedUser, UnblockUserResponse } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,10 +15,13 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const BLOCKED_USERS_QUERY_KEY = ["blocked-users"] as const;
+// ============================================================
+// CONSTANTS
+// ============================================================
 
 const PAGE_BACKGROUND = "#FFFFFF";
 const PRIMARY_BLUE = "#172A9B";
@@ -26,6 +30,9 @@ const DESCRIPTION_BLUE = "#5475E9";
 const BORDER_COLOR = "#E6EEFF";
 const MUTED_TEXT = "#8793AA";
 
+// Responsive breakpoint.
+const NARROW_SCREEN_BREAKPOINT = 360;
+
 // ============================================================
 // CACHE INVALIDATION
 // ============================================================
@@ -33,16 +40,19 @@ const MUTED_TEXT = "#8793AA";
 /**
  * Invalidate queries affected by blocking/unblocking a user.
  *
- * Prefix matching also invalidates queries with additional
- * parameters, such as post IDs and reply cursors.
+ * The blocked-users query is scoped to the authenticated user.
+ * Other affected comment, reply, and feed queries retain their
+ * existing prefix-based invalidation behavior.
  */
 async function invalidateUserRelatedQueries(
   queryClient: ReturnType<typeof useQueryClient>,
+  blockedUsersQueryKey: readonly ["blocked-users", string],
 ): Promise<void> {
   const invalidationPromises = [
-    // Refresh the blocked users list.
+    // Refresh blocked users for the current account only.
     queryClient.invalidateQueries({
-      queryKey: BLOCKED_USERS_QUERY_KEY,
+      queryKey: blockedUsersQueryKey,
+      exact: true,
     }),
 
     // Refresh comments and replies.
@@ -83,6 +93,24 @@ async function invalidateUserRelatedQueries(
 export default function BlockedUsersScreen() {
   const queryClient = useQueryClient();
 
+  const { width } = useWindowDimensions();
+
+  // ==========================================================
+  // AUTHENTICATED USER
+  // ==========================================================
+
+  const { user, isPending: isSessionPending } = useAuth();
+
+  const userId = user?.id;
+
+  // Account-specific query key.
+  //
+  // Each authenticated account gets its own blocked-users cache.
+  const blockedUsersQueryKey = ["blocked-users", userId ?? ""] as const;
+
+  // Narrow-screen layout.
+  const isNarrowScreen = width <= NARROW_SCREEN_BREAKPOINT;
+
   // ==========================================================
   // FETCH BLOCKED USERS
   // ==========================================================
@@ -95,8 +123,12 @@ export default function BlockedUsersScreen() {
     refetch,
     isRefetching,
   } = useQuery<BlockedUser[], Error>({
-    queryKey: BLOCKED_USERS_QUERY_KEY,
+    queryKey: blockedUsersQueryKey,
     queryFn: fetchBlockedUsers,
+
+    // Never fetch blocked users without an authenticated account.
+    enabled: Boolean(userId),
+
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
     retry: 2,
@@ -116,20 +148,23 @@ export default function BlockedUsersScreen() {
     mutationFn: unblockUserRequest,
 
     // --------------------------------------------------------
-    // Optimistically remove the user from the list.
+    // OPTIMISTIC UPDATE
     // --------------------------------------------------------
 
     onMutate: async (targetUserId) => {
+      // Cancel any ongoing request for this account's list.
       await queryClient.cancelQueries({
-        queryKey: BLOCKED_USERS_QUERY_KEY,
+        queryKey: blockedUsersQueryKey,
+        exact: true,
       });
 
-      const previousUsers = queryClient.getQueryData<BlockedUser[]>(
-        BLOCKED_USERS_QUERY_KEY,
-      );
+      // Save the previous account-specific data for rollback.
+      const previousUsers =
+        queryClient.getQueryData<BlockedUser[]>(blockedUsersQueryKey);
 
+      // Immediately remove the unblocked user from the list.
       queryClient.setQueryData<BlockedUser[]>(
-        BLOCKED_USERS_QUERY_KEY,
+        blockedUsersQueryKey,
         (oldUsers) =>
           oldUsers?.filter((user) => user.userId !== targetUserId) ?? [],
       );
@@ -138,24 +173,21 @@ export default function BlockedUsersScreen() {
     },
 
     // --------------------------------------------------------
-    // Restore the previous list if the request fails.
+    // ROLLBACK
     // --------------------------------------------------------
 
     onError: (_error, _targetUserId, context) => {
       if (context?.previousUsers !== undefined) {
-        queryClient.setQueryData(
-          BLOCKED_USERS_QUERY_KEY,
-          context.previousUsers,
-        );
+        queryClient.setQueryData(blockedUsersQueryKey, context.previousUsers);
       }
     },
 
     // --------------------------------------------------------
-    // Refresh all affected queries after the operation.
+    // CACHE INVALIDATION
     // --------------------------------------------------------
 
     onSettled: async () => {
-      await invalidateUserRelatedQueries(queryClient);
+      await invalidateUserRelatedQueries(queryClient, blockedUsersQueryKey);
     },
   });
 
@@ -176,8 +208,8 @@ export default function BlockedUsersScreen() {
       try {
         await unblockMutation.mutateAsync(targetUserId);
       } catch (error) {
-        // The mutation's onError handles cache rollback.
-        // The error is displayed in the screen below.
+        // Cache rollback is handled by onError.
+        // The error is displayed below.
         console.error("Failed to unblock user:", error);
       }
     },
@@ -213,10 +245,17 @@ export default function BlockedUsersScreen() {
 
       return (
         <View>
-          <View style={styles.userRow}>
+          <View
+            style={[styles.userRow, isNarrowScreen && styles.userRowNarrow]}
+          >
             {/* PROFILE IMAGE */}
 
-            <View style={styles.avatarContainer}>
+            <View
+              style={[
+                styles.avatarContainer,
+                isNarrowScreen && styles.avatarContainerNarrow,
+              ]}
+            >
               {item.image ? (
                 <Image
                   source={{ uri: item.image }}
@@ -232,16 +271,25 @@ export default function BlockedUsersScreen() {
                 />
               ) : (
                 <View style={styles.avatarFallback}>
-                  <UserRound size={34} color={PRIMARY_BLUE} strokeWidth={1.7} />
+                  <UserRound
+                    size={isNarrowScreen ? 25 : 34}
+                    color={PRIMARY_BLUE}
+                    strokeWidth={1.7}
+                  />
                 </View>
               )}
             </View>
 
             {/* USER NAME */}
 
-            <View style={styles.userInfo}>
+            <View
+              style={[styles.userInfo, isNarrowScreen && styles.userInfoNarrow]}
+            >
               <Text
-                style={styles.userName}
+                style={[
+                  styles.userName,
+                  isNarrowScreen && styles.userNameNarrow,
+                ]}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
@@ -254,6 +302,7 @@ export default function BlockedUsersScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.unblockButton,
+                isNarrowScreen && styles.unblockButtonNarrow,
                 pressed && styles.unblockButtonPressed,
                 isAnyUnblocking && styles.unblockButtonDisabled,
               ]}
@@ -269,7 +318,14 @@ export default function BlockedUsersScreen() {
               {isUnblocking ? (
                 <ActivityIndicator size="small" color={ACCENT_BLUE} />
               ) : (
-                <Text style={styles.unblockButtonText}>Unblock</Text>
+                <Text
+                  style={[
+                    styles.unblockButtonText,
+                    isNarrowScreen && styles.unblockButtonTextNarrow,
+                  ]}
+                >
+                  Unblock
+                </Text>
               )}
             </Pressable>
           </View>
@@ -285,6 +341,7 @@ export default function BlockedUsersScreen() {
     [
       blockedUsers.length,
       handleUnblockUser,
+      isNarrowScreen,
       unblockMutation.isPending,
       unblockMutation.variables,
     ],
@@ -310,33 +367,68 @@ export default function BlockedUsersScreen() {
   );
 
   // ==========================================================
+  // HEADER
+  // ==========================================================
+
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <Pressable
+        onPress={handleGoBack}
+        style={({ pressed }) => [
+          styles.backButton,
+          pressed && styles.backButtonPressed,
+        ]}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <ArrowLeft size={30} color={PRIMARY_BLUE} strokeWidth={2.2} />
+      </Pressable>
+
+      <Text style={styles.headerTitle}>Blocked Users</Text>
+
+      <View style={styles.headerRightPlaceholder} />
+    </View>
+  );
+
+  // ==========================================================
   // LOADING STATE
   // ==========================================================
 
-  if (isLoading) {
+  if (isSessionPending || (Boolean(userId) && isLoading)) {
     return (
       <SafeAreaView style={styles.safeArea} edges={["top"]}>
         <View style={styles.screenContainer}>
-          <View style={styles.header}>
-            <Pressable
-              onPress={handleGoBack}
-              style={styles.backButton}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-            >
-              <ArrowLeft size={30} color={PRIMARY_BLUE} strokeWidth={2.2} />
-            </Pressable>
-
-            <Text style={styles.headerTitle}>Blocked Users</Text>
-
-            <View style={styles.headerRightPlaceholder} />
-          </View>
+          {renderHeader()}
 
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={ACCENT_BLUE} />
 
             <Text style={styles.loadingText}>Loading blocked users...</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ==========================================================
+  // UNAUTHENTICATED STATE
+  // ==========================================================
+
+  if (!userId) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <View style={styles.screenContainer}>
+          {renderHeader()}
+
+          <View style={styles.errorContainer}>
+            <UserRound size={40} color={DESCRIPTION_BLUE} strokeWidth={1.7} />
+
+            <Text style={styles.errorTitle}>Sign in required</Text>
+
+            <Text style={styles.errorDescription}>
+              Please sign in to view your blocked users.
+            </Text>
           </View>
         </View>
       </SafeAreaView>
@@ -351,21 +443,7 @@ export default function BlockedUsersScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={["top"]}>
         <View style={styles.screenContainer}>
-          <View style={styles.header}>
-            <Pressable
-              onPress={handleGoBack}
-              style={styles.backButton}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-            >
-              <ArrowLeft size={30} color={PRIMARY_BLUE} strokeWidth={2.2} />
-            </Pressable>
-
-            <Text style={styles.headerTitle}>Blocked Users</Text>
-
-            <View style={styles.headerRightPlaceholder} />
-          </View>
+          {renderHeader()}
 
           <View style={styles.errorContainer}>
             <RefreshCw size={40} color={DESCRIPTION_BLUE} strokeWidth={1.7} />
@@ -404,24 +482,7 @@ export default function BlockedUsersScreen() {
             HEADER
         ================================================== */}
 
-        <View style={styles.header}>
-          <Pressable
-            onPress={handleGoBack}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.backButtonPressed,
-            ]}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <ArrowLeft size={30} color={PRIMARY_BLUE} strokeWidth={2.2} />
-          </Pressable>
-
-          <Text style={styles.headerTitle}>Blocked Users</Text>
-
-          <View style={styles.headerRightPlaceholder} />
-        </View>
+        {renderHeader()}
 
         {/* ==================================================
             DESCRIPTION
@@ -584,6 +645,13 @@ const styles = StyleSheet.create({
     gap: 14,
   },
 
+  // Narrow screens: 360 points and below.
+  userRowNarrow: {
+    minHeight: 94,
+    paddingVertical: 12,
+    gap: 8,
+  },
+
   avatarContainer: {
     width: 86,
     height: 86,
@@ -592,6 +660,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5EEFF",
     borderWidth: 1,
     borderColor: "#DCE8FF",
+  },
+
+  avatarContainerNarrow: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    flexShrink: 0,
   },
 
   avatar: {
@@ -613,11 +688,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  userInfoNarrow: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+
   userName: {
     fontSize: 21,
     fontWeight: "500",
     color: PRIMARY_BLUE,
     letterSpacing: -0.4,
+  },
+
+  userNameNarrow: {
+    fontSize: 15,
+    letterSpacing: -0.3,
   },
 
   // ----------------------------------------------------------
@@ -632,6 +718,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#E7EFFF",
     justifyContent: "center",
     alignItems: "center",
+    flexShrink: 0,
+  },
+
+  unblockButtonNarrow: {
+    width: 82,
+    minWidth: 82,
+    height: 44,
+    paddingHorizontal: 6,
+    borderRadius: 24,
   },
 
   unblockButtonPressed: {
@@ -647,6 +742,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "500",
     color: ACCENT_BLUE,
+  },
+
+  unblockButtonTextNarrow: {
+    fontSize: 13,
+    fontWeight: "500",
   },
 
   // ----------------------------------------------------------
