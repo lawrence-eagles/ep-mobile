@@ -118,3 +118,32 @@ export interface SelectedCommentAction {
   authorId: string;
   authorName: string;
 }
+
+// ==========================================
+// BLOCKED USERS TYPES
+// ==========================================
+export interface BlockedUser {
+  userId: string;
+  blockedAt: string;
+  name: string;
+  image: string | null;
+}
+
+export interface BlockedUsersResponse {
+  success: boolean;
+  data: BlockedUser[];
+  message?: string;
+  error?: string;
+}
+
+export interface UnblockUserResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+  data?: {
+    blockerId: string;
+    blockedId: string;
+    isBlocked: boolean;
+    wasBlocked: boolean;
+  };
+}

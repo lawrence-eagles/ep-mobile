@@ -313,7 +313,7 @@ Push Notifications (FCM V1): Google Service Account Key For FCM V1
 
 Submissions: Google Service Account Key for Play Store Submissions
   None assigned yet
-
+D
 Configuration: Build Credentials iUZwJE3xUU (Default)
 Keystore
 Type                JKS
