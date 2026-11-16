@@ -143,7 +143,10 @@ export default function BlockedUsersScreen() {
     UnblockUserResponse,
     Error,
     string,
-    { previousUsers: BlockedUser[] | undefined }
+    {
+      previousUsers: BlockedUser[] | undefined;
+      queryKey: typeof blockedUsersQueryKey;
+    }
   >({
     mutationFn: unblockUserRequest,
 
@@ -152,24 +155,24 @@ export default function BlockedUsersScreen() {
     // --------------------------------------------------------
 
     onMutate: async (targetUserId) => {
+      const queryKey = blockedUsersQueryKey;
       // Cancel any ongoing request for this account's list.
       await queryClient.cancelQueries({
-        queryKey: blockedUsersQueryKey,
+        queryKey,
         exact: true,
       });
 
       // Save the previous account-specific data for rollback.
-      const previousUsers =
-        queryClient.getQueryData<BlockedUser[]>(blockedUsersQueryKey);
+      const previousUsers = queryClient.getQueryData<BlockedUser[]>(queryKey);
 
       // Immediately remove the unblocked user from the list.
       queryClient.setQueryData<BlockedUser[]>(
-        blockedUsersQueryKey,
+        queryKey,
         (oldUsers) =>
           oldUsers?.filter((user) => user.userId !== targetUserId) ?? [],
       );
 
-      return { previousUsers };
+      return { previousUsers, queryKey };
     },
 
     // --------------------------------------------------------
@@ -178,7 +181,7 @@ export default function BlockedUsersScreen() {
 
     onError: (_error, _targetUserId, context) => {
       if (context?.previousUsers !== undefined) {
-        queryClient.setQueryData(blockedUsersQueryKey, context.previousUsers);
+        queryClient.setQueryData(context.queryKey, context.previousUsers);
       }
     },
 
@@ -186,8 +189,11 @@ export default function BlockedUsersScreen() {
     // CACHE INVALIDATION
     // --------------------------------------------------------
 
-    onSettled: async () => {
-      await invalidateUserRelatedQueries(queryClient, blockedUsersQueryKey);
+    onSettled: async (_data, _error, _targetUserId, context) => {
+      await invalidateUserRelatedQueries(
+        queryClient,
+        context?.queryKey ?? blockedUsersQueryKey,
+      );
     },
   });
 
